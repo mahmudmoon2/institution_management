@@ -1,0 +1,29 @@
+@import "tailwindcss";
+
+@theme {
+  /* আমাদের কাস্টম ফন্ট (Montserrat হবে ডিফল্ট, আর বাংলার জন্য Hind Siliguri) */
+  --font-sans: "Montserrat", "Hind Siliguri", sans-serif;
+  --font-bengali: "Hind Siliguri", sans-serif;
+
+  /* ব্র্যান্ড কালার কনফিগারেশন */
+  --color-brand-deepPlum: #190933;
+  --color-brand-royalPurple: #665687;
+  --color-brand-softLavender: #B084CC;
+  --color-brand-mintGreen: #ACFCD9;
+  --color-brand-tealCyan: #5DD9C1;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    /* ডিফল্টভাবে সব জায়গায় Montserrat পাবে */
+    font-family: var(--font-sans);
+    color: var(--color-brand-deepPlum);
+    background-color: white;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
