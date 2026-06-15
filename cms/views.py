@@ -1,30 +1,39 @@
 from django.http import HttpResponse
 from django.template.loader import render_to_string
-from rest_framework import viewsets
+from rest_framework import viewsets, permissions
 from rest_framework.decorators import action
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
-from xhtml2pdf import pisa
+from weasyprint import HTML
 from .models import HeroSlide, Notice, Event, FAQ, Blog, ContactMessage, EventGalleryImage, EventRegistration
 from .serializers import (
     HeroSlideSerializer, NoticeSerializer, EventSerializer, FAQSerializer,
     BlogSerializer, ContactMessageSerializer, EventGalleryImageSerializer, EventRegistrationSerializer
 )
-# Keep Student import only if used elsewhere; it's not used in register anymore
 from students.models import Student
 
-# ---------- HeroSlide ----------
+# ---------- অনুমোদন: শুধু অ্যাডমিন (প্রয়োজনে) ----------
+class IsAdminUser(permissions.BasePermission):
+    def has_permission(self, request, view):
+        return request.user and request.user.is_authenticated and request.user.role == 'ADMIN'
+
+# ---------- HeroSlide (পাবলিক শুধু পড়া) ----------
 class HeroSlideViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = HeroSlide.objects.filter(is_active=True).order_by('order')
     serializer_class = HeroSlideSerializer
     permission_classes = [AllowAny]
 
-# ---------- Notice ----------
-class NoticeViewSet(viewsets.ReadOnlyModelViewSet):
+# ---------- Notice (পাবলিক GET, প্রটেক্টেড POST/PUT/DELETE) ----------
+class NoticeViewSet(viewsets.ModelViewSet):
     queryset = Notice.objects.filter(is_active=True).order_by('-created_at')
     serializer_class = NoticeSerializer
-    permission_classes = [AllowAny]
+
+    def get_permissions(self):
+        if self.request.method == 'GET':
+            return [AllowAny()]
+        # বর্তমানে যেকোনো লগইন ব্যবহারকারী নোটিস যোগ করতে পারবে। শুধু অ্যাডমিন চাইলে [IsAdminUser()] ব্যবহার করো।
+        return [IsAuthenticated()]
 
     @action(detail=True, methods=['get'], url_path='download-pdf')
     def download_pdf(self, request, pk=None):
@@ -37,11 +46,15 @@ class NoticeViewSet(viewsets.ReadOnlyModelViewSet):
             return HttpResponse('Error generating PDF')
         return response
 
-# ---------- Event ----------
-class EventViewSet(viewsets.ReadOnlyModelViewSet):
+# ---------- Event (পাবলিক GET, প্রটেক্টেড POST/PUT/DELETE) ----------
+class EventViewSet(viewsets.ModelViewSet):
     queryset = Event.objects.all().order_by('-date_time')
     serializer_class = EventSerializer
-    permission_classes = [AllowAny]
+
+    def get_permissions(self):
+        if self.request.method == 'GET':
+            return [AllowAny()]
+        return [IsAuthenticated()]
 
     @action(detail=True, methods=['get'], url_path='gallery')
     def gallery(self, request, pk=None):
@@ -59,19 +72,17 @@ class EventViewSet(viewsets.ReadOnlyModelViewSet):
             return Response({'status': 'success', 'message': 'Registration submitted'}, status=201)
         return Response(serializer.errors, status=400)
 
-# ---------- FAQ ----------
+# ---------- FAQ, Blog, ContactMessage আগের মতোই রাখা যায় ----------
 class FAQViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = FAQ.objects.filter(is_active=True).order_by('order')
     serializer_class = FAQSerializer
     permission_classes = [AllowAny]
 
-# ---------- Blog ----------
 class BlogViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Blog.objects.filter(is_active=True).order_by('-created_at')
     serializer_class = BlogSerializer
     permission_classes = [AllowAny]
 
-# ---------- Contact Message ----------
 class ContactMessageViewSet(viewsets.ModelViewSet):
     queryset = ContactMessage.objects.all().order_by('-created_at')
     serializer_class = ContactMessageSerializer

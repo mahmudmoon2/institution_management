@@ -40,6 +40,10 @@ import ClassTests from './pages/admin/ClassTests';
 import Accounts from './pages/admin/Accounts';
 import Inventory from './pages/admin/Inventory';
 import SMSGateway from './pages/admin/SMSGateway';
+// NEW: AddNotice & AddEvent
+import AddNotice from './pages/admin/AddNotice';
+import AddEvent from './pages/admin/AddEvent';
+
 // Student Pages
 import StudentDashboard from './pages/student/StudentDashboard';
 import StudentResults from './pages/student/StudentResults';
@@ -52,16 +56,13 @@ import TeacherResults from './pages/teacher/TeacherResults';
 // Parent Pages
 import ParentDashboard from './pages/parent/ParentDashboard';
 
-
 import Careers from './pages/public/Careers';
 import RecruitmentAdmin from './pages/admin/RecruitmentAdmin';
-
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-
         {/* ================= PUBLIC ROUTES ================= */}
         <Route element={<PublicLayout />}>
           <Route path="/" element={<Home />} />
@@ -83,7 +84,6 @@ function App() {
         {/* ================= PROTECTED ROUTES ================= */}
         <Route element={<PrivateRoute />}>
           <Route element={<DashboardLayout />}>
-
             {/* Admin Routes */}
             <Route path="/admin/dashboard" element={<AdminDashboard />} />
             <Route path="/admin/inventory" element={<Inventory />} />
@@ -92,19 +92,16 @@ function App() {
             <Route path="/admin/students" element={<Students />} />
             <Route path="/admin/students/add" element={<AddStudent />} />
             <Route path="/admin/students/edit/:id" element={<EditStudent />} />
-
             {/* Teachers */}
             <Route path="/admin/teachers" element={<Teachers />} />
             <Route path="/admin/teachers/add" element={<AddTeacher />} />
             <Route path="/admin/teachers/edit/:id" element={<EditTeacher />} />
             <Route path="/admin/teacher-attendance" element={<TeacherAttendance />} />
-
             {/* Fees */}
             <Route path="/admin/fee-categories" element={<FeeCategories />} />
             <Route path="/admin/collect-fee" element={<CollectFee />} />
             <Route path="/admin/receipt/:id" element={<Receipt />} />
             <Route path="/admin/fee-reports" element={<FeeReports />} />
-
             {/* Exams */}
             <Route path="/admin/exams" element={<Exams />} />
             <Route path="/admin/exam-routine" element={<SubjectExams />} />
@@ -115,10 +112,12 @@ function App() {
             <Route path="/admin/admit-cards" element={<AdmitCards />} />
             <Route path="/admin/class-tests" element={<ClassTests />} />
             <Route path="/admin/accounts" element={<Accounts />} />
-            {/* Student Routes (Fixed paths) */}
+            {/* NEW: CMS Actions */}
+            <Route path="/admin/notices/add" element={<AddNotice />} />
+            <Route path="/admin/events/add" element={<AddEvent />} />
+            {/* Student Routes */}
             <Route path="/student/dashboard" element={<StudentDashboard />} />
             <Route path="/student/results" element={<StudentResults />} />
-
             {/* Teacher Routes */}
             <Route path="/teacher/dashboard" element={<TeacherDashboard />} />
             <Route path="/teacher/attendance" element={<StudentAttendance />} />
@@ -129,7 +128,6 @@ function App() {
             <Route path="/admin/recruitment" element={<RecruitmentAdmin />} />
           </Route>
         </Route>
-
       </Routes>
     </BrowserRouter>
   );

@@ -2,9 +2,11 @@ import { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
 import api from '../api/axios';
+import { Menu, X, LogOut, ChevronLeft, ChevronRight } from 'lucide-react';
 
 export default function DashboardLayout() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [userName, setUserName] = useState('');
   const { userRole, logout } = useAuthStore();
   const location = useLocation();
@@ -32,105 +34,310 @@ export default function DashboardLayout() {
     navigate('/login');
   };
 
-  const menuItems = {
-    ADMIN: [
-      { name: 'Overview', path: '/admin/dashboard', icon: '📊' },
-      { name: 'Students', path: '/admin/students', icon: '👨‍🎓' },
-      { name: 'Teachers', path: '/admin/teachers', icon: '👩‍🏫' },
-      { name: 'SMS Gateway', path: '/admin/sms-gateway', icon: '💬' },
-      { name: 'Teacher Attendance', path: '/admin/teacher-attendance', icon: '✅' }, 
-      { name: 'Fee Categories', path: '/admin/fee-categories', icon: '📋' },
-      { name: 'Collect Fee', path: '/admin/collect-fee', icon: '💰' },
-      { name: 'Fee Reports', path: '/admin/fee-reports', icon: '📈' },
-      { name: 'Admit Cards', path: '/admin/admit-cards', icon: '🎫' },
-      { name: 'Manage Exams', path: '/admin/exams', icon: '📝' },
-      { name: 'Exam Routine', path: '/admin/exam-routine', icon: '📅' },
-      { name: 'Marks Entry', path: '/admin/marks-entry', icon: '✅' },
-      { name: 'Grades Setup', path: '/admin/grades-setup', icon: '⭐' },
-      { name: 'Result Sheet', path: '/admin/result-sheet', icon: '📊' },
-      { name: 'Class Tests', path: '/admin/class-tests', icon: '📝' },
-      { name: 'Accounts', path: '/admin/accounts', icon: '🏦' }, 
-      { name: 'Inventory', path: '/admin/inventory', icon: '📦' },
-      { name: 'Recruitment', path: '/admin/recruitment', icon: '💼' },
-    ],
-    TEACHER: [
-      { name: 'My Classes', path: '/teacher/dashboard', icon: '📅' },
-      { name: 'Attendance', path: '/teacher/attendance', icon: '✅' },
-      { name: 'Results', path: '/teacher/results', icon: '📝' },
-    ],
-    STUDENT: [
-      { name: 'My Routine', path: '/student/dashboard', icon: '📅' },
-      { name: 'Results', path: '/student/results', icon: '📋' },
-    ],
-    PARENT: [
-      { name: 'Child Profile', path: '/parent/dashboard', icon: '👦' },
-      { name: 'Fees Status', path: '/parent/fees', icon: '💳' },
-    ],
-  };
+  // Categorized menu items for ADMIN
+  const adminMenuCategories = [
+    {
+      name: 'Overview',
+      items: [{ name: 'Dashboard', path: '/admin/dashboard', icon: '📊' }],
+    },
+    {
+      name: 'People Management',
+      items: [
+        { name: 'Students', path: '/admin/students', icon: '👨‍🎓' },
+        { name: 'Teachers', path: '/admin/teachers', icon: '👩‍🏫' },
+        { name: 'Teacher Attendance', path: '/admin/teacher-attendance', icon: '✅' },
+      ],
+    },
+    {
+      name: 'Fees & Finance',
+      items: [
+        { name: 'Fee Categories', path: '/admin/fee-categories', icon: '📋' },
+        { name: 'Collect Fee', path: '/admin/collect-fee', icon: '💰' },
+        { name: 'Fee Reports', path: '/admin/fee-reports', icon: '📈' },
+        { name: 'Accounts', path: '/admin/accounts', icon: '🏦' },
+      ],
+    },
+    {
+      name: 'Examinations',
+      items: [
+        { name: 'Manage Exams', path: '/admin/exams', icon: '📝' },
+        { name: 'Exam Routine', path: '/admin/exam-routine', icon: '📅' },
+        { name: 'Marks Entry', path: '/admin/marks-entry', icon: '✅' },
+        { name: 'Grades Setup', path: '/admin/grades-setup', icon: '⭐' },
+        { name: 'Result Sheet', path: '/admin/result-sheet', icon: '📊' },
+        { name: 'Class Tests', path: '/admin/class-tests', icon: '📝' },
+        { name: 'Admit Cards', path: '/admin/admit-cards', icon: '🎫' },
+      ],
+    },
+    {
+      name: 'Communication',
+      items: [{ name: 'SMS Gateway', path: '/admin/sms-gateway', icon: '💬' }],
+    },
+    {
+      name: 'Operations',
+      items: [
+        { name: 'Inventory', path: '/admin/inventory', icon: '📦' },
+        { name: 'Recruitment', path: '/admin/recruitment', icon: '💼' },
+      ],
+    },
+  ];
 
-  const currentMenu = menuItems[userRole] || [];
+  const teacherMenuItems = [
+    { name: 'My Classes', path: '/teacher/dashboard', icon: '📅' },
+    { name: 'Attendance', path: '/teacher/attendance', icon: '✅' },
+    { name: 'Results', path: '/teacher/results', icon: '📝' },
+  ];
 
-  return (
-    <div className="flex h-screen bg-[#F5F0FF] overflow-hidden">
-      {/* Sidebar */}
-      <aside className={`bg-brand-deepPlum text-white transition-all duration-300 ${isSidebarOpen ? 'w-64' : 'w-20'} flex flex-col`}>
-        <div className="h-16 flex items-center justify-center border-b border-white/10 px-2">
-          <Link to="/" title="Go to Home Page" className="flex items-center gap-3 hover:scale-105 transition-transform duration-300">
-            <div className="w-10 h-10 bg-brand-royalPurple rounded-full flex items-center justify-center text-white text-sm font-bold border-2 border-brand-tealCyan shadow-md shrink-0">
-              DIA
-            </div>
-            {isSidebarOpen && <span className="text-lg font-bold tracking-wide truncate">Ideal Academy</span>}
-          </Link>
-        </div>
-        
-        <nav className="flex-1 py-6 overflow-y-auto space-y-2">
-          {currentMenu.map((item) => {
-            const isActive = location.pathname === item.path;
-            return (
-              <Link
-                key={item.name}
-                to={item.path}
-                className={`flex items-center px-4 py-3 mx-3 rounded-lg transition-colors ${
-                  isActive 
-                  ? 'bg-brand-tealCyan text-brand-deepPlum font-semibold shadow-md' 
-                  : 'hover:bg-white/10 text-gray-300 hover:text-white'
-                }`}
-              >
-                <span className="text-xl">{item.icon}</span>
-                {isSidebarOpen && <span className="ml-3">{item.name}</span>}
-              </Link>
-            );
-          })}
-        </nav>
+  const studentMenuItems = [
+    { name: 'My Routine', path: '/student/dashboard', icon: '📅' },
+    { name: 'Results', path: '/student/results', icon: '📋' },
+  ];
 
+  const parentMenuItems = [
+    { name: 'Child Profile', path: '/parent/dashboard', icon: '👦' },
+    { name: 'Fees Status', path: '/parent/fees', icon: '💳' },
+  ];
+
+  // Determine which menu to render
+  let menuCategories = [];
+  let simpleMenu = [];
+  if (userRole === 'ADMIN') {
+    menuCategories = adminMenuCategories;
+  } else if (userRole === 'TEACHER') {
+    simpleMenu = teacherMenuItems;
+  } else if (userRole === 'STUDENT') {
+    simpleMenu = studentMenuItems;
+  } else if (userRole === 'PARENT') {
+    simpleMenu = parentMenuItems;
+  }
+
+  // Close mobile menu on route change
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+  }, [location.pathname]);
+
+  const sidebarWidth = isSidebarOpen ? 'w-64' : 'w-20';
+
+  // Render sidebar content (shared between desktop and mobile drawer)
+  const renderSidebarContent = () => (
+    <>
+      <div className="flex items-center justify-between p-4 border-b border-white/10">
+        <Link to="/" className="flex items-center gap-2 hover:opacity-90 transition">
+          <div className="w-8 h-8 bg-gradient-to-br from-brand-tealCyan to-brand-mintGreen rounded-lg flex items-center justify-center">
+            <span className="text-brand-deepPlum font-bold text-sm">DIA</span>
+          </div>
+          {isSidebarOpen && <span className="font-semibold text-md">Ideal Academy</span>}
+        </Link>
         {isSidebarOpen && (
-          <div className="p-4 border-t border-white/10 text-xs text-center text-gray-400">
-            <p>Developed by Mahmudul Hasan Moon</p>
+          <button onClick={() => setIsSidebarOpen(false)} className="p-1 rounded-full hover:bg-white/10">
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+        )}
+        {!isSidebarOpen && (
+          <button onClick={() => setIsSidebarOpen(true)} className="p-1 rounded-full hover:bg-white/10">
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        )}
+      </div>
+
+      <nav className="flex-1 overflow-y-auto py-4 px-2 space-y-4">
+        {menuCategories.length > 0 ? (
+          // Admin categorized menu
+          menuCategories.map((category, idx) => (
+            <div key={idx} className="space-y-1">
+              {isSidebarOpen && (
+                <div className="text-[10px] uppercase tracking-wider text-gray-400 px-3 pt-2 pb-1 font-semibold">
+                  {category.name}
+                </div>
+              )}
+              {category.items.map((item) => {
+                const isActive = location.pathname === item.path;
+                return (
+                  <Link
+                    key={item.name}
+                    to={item.path}
+                    className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
+                      isActive
+                        ? 'bg-brand-tealCyan text-brand-deepPlum font-medium shadow-sm'
+                        : 'text-gray-300 hover:bg-white/10 hover:text-white'
+                    }`}
+                    title={!isSidebarOpen ? item.name : ''}
+                  >
+                    <span className="text-base">{item.icon}</span>
+                    {isSidebarOpen && <span>{item.name}</span>}
+                  </Link>
+                );
+              })}
+            </div>
+          ))
+        ) : (
+          // Non-admin simple menu
+          <div className="space-y-1">
+            {simpleMenu.map((item) => {
+              const isActive = location.pathname === item.path;
+              return (
+                <Link
+                  key={item.name}
+                  to={item.path}
+                  className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
+                    isActive
+                      ? 'bg-brand-tealCyan text-brand-deepPlum font-medium shadow-sm'
+                      : 'text-gray-300 hover:bg-white/10 hover:text-white'
+                  }`}
+                  title={!isSidebarOpen ? item.name : ''}
+                >
+                  <span className="text-base">{item.icon}</span>
+                  {isSidebarOpen && <span>{item.name}</span>}
+                </Link>
+              );
+            })}
           </div>
         )}
-      </aside>
+      </nav>
 
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col h-full overflow-hidden">
-        <header className="h-16 bg-white shadow-sm flex items-center justify-between px-6 z-10 shrink-0">
-          <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="text-gray-500 hover:text-brand-deepPlum focus:outline-none transition-colors">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16"></path>
-            </svg>
-          </button>
+      {isSidebarOpen && (
+        <div className="p-4 border-t border-white/10 text-center text-xs text-gray-500">
+          <p>Developed by Mahmudul Hasan Moon</p>
+        </div>
+      )}
+    </>
+  );
 
-          <div className="flex items-center space-x-4">
-            <div className="text-right hidden sm:block">
-               <p className="text-sm font-bold text-brand-deepPlum">{userName}</p>
-               <p className="text-xs text-gray-500 font-medium bg-gray-100 inline-block px-2 py-0.5 rounded-full">{userRole}</p>
-            </div>
-            <button onClick={handleLogout} className="text-sm bg-red-50 text-red-600 hover:bg-red-100 px-4 py-2 rounded-lg font-semibold transition-colors">
-              Logout
-            </button>
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Mobile Header (visible only on mobile) */}
+      <div className="lg:hidden sticky top-0 z-30 bg-white shadow-md px-4 py-2 flex items-center justify-between">
+        <button onClick={() => setIsMobileMenuOpen(true)} className="p-1 rounded-lg hover:bg-gray-100">
+          <Menu className="w-5 h-5 text-brand-deepPlum" />
+        </button>
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 bg-gradient-to-br from-brand-tealCyan to-brand-mintGreen rounded-lg flex items-center justify-center">
+            <span className="text-brand-deepPlum font-bold text-xs">DIA</span>
           </div>
-        </header>
+          <span className="font-medium text-brand-deepPlum text-sm">Ideal Academy</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="text-right">
+            <p className="text-xs text-gray-700">{userName}</p>
+            <p className="text-[10px] text-gray-400">{userRole}</p>
+          </div>
+          <button onClick={handleLogout} className="p-1 rounded-lg hover:bg-red-50">
+            <LogOut className="w-4 h-4 text-red-500" />
+          </button>
+        </div>
+      </div>
 
-        <main className="flex-1 overflow-x-hidden overflow-y-auto p-6">
+      {/* Mobile Sidebar Drawer */}
+      {isMobileMenuOpen && (
+        <>
+          <div className="fixed inset-0 bg-black/50 z-40 lg:hidden" onClick={() => setIsMobileMenuOpen(false)} />
+          <aside className="fixed top-0 left-0 h-full w-64 bg-brand-deepPlum text-white z-50 shadow-xl flex flex-col transform transition-transform duration-300">
+            <div className="flex items-center justify-between p-4 border-b border-white/10">
+              <Link to="/" className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-gradient-to-br from-brand-tealCyan to-brand-mintGreen rounded-lg flex items-center justify-center">
+                  <span className="text-brand-deepPlum font-bold text-sm">DIA</span>
+                </div>
+                <span className="font-medium text-sm">Ideal Academy</span>
+              </Link>
+              <button onClick={() => setIsMobileMenuOpen(false)} className="p-1 rounded-full hover:bg-white/10">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <nav className="flex-1 overflow-y-auto py-4 px-2 space-y-4">
+              {menuCategories.length > 0 ? (
+                menuCategories.map((category, idx) => (
+                  <div key={idx} className="space-y-1">
+                    <div className="text-[10px] uppercase tracking-wider text-gray-400 px-3 pt-2 pb-1 font-semibold">
+                      {category.name}
+                    </div>
+                    {category.items.map((item) => {
+                      const isActive = location.pathname === item.path;
+                      return (
+                        <Link
+                          key={item.name}
+                          to={item.path}
+                          className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
+                            isActive
+                              ? 'bg-brand-tealCyan text-brand-deepPlum font-medium shadow-sm'
+                              : 'text-gray-300 hover:bg-white/10 hover:text-white'
+                          }`}
+                        >
+                          <span className="text-base">{item.icon}</span>
+                          <span>{item.name}</span>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                ))
+              ) : (
+                <div className="space-y-1">
+                  {simpleMenu.map((item) => {
+                    const isActive = location.pathname === item.path;
+                    return (
+                      <Link
+                        key={item.name}
+                        to={item.path}
+                        className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
+                          isActive
+                            ? 'bg-brand-tealCyan text-brand-deepPlum font-medium shadow-sm'
+                            : 'text-gray-300 hover:bg-white/10 hover:text-white'
+                        }`}
+                      >
+                        <span className="text-base">{item.icon}</span>
+                        <span>{item.name}</span>
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
+            </nav>
+            <div className="p-4 border-t border-white/10 text-center text-xs text-gray-400">
+              <p>Developed by Mahmudul Hasan Moon</p>
+            </div>
+          </aside>
+        </>
+      )}
+
+      {/* Desktop Layout */}
+      <div className="hidden lg:flex h-screen overflow-hidden">
+        {/* Sidebar */}
+        <aside className={`${sidebarWidth} bg-brand-deepPlum text-white transition-all duration-300 flex flex-col shadow-md`}>
+          {renderSidebarContent()}
+        </aside>
+
+        {/* Main Content */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <header className="h-12 bg-white shadow-sm flex items-center justify-between px-5 z-10 shrink-0 border-b border-gray-100">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 bg-gradient-to-br from-brand-tealCyan to-brand-mintGreen rounded-lg flex items-center justify-center">
+                <span className="text-brand-deepPlum font-bold text-xs">DIA</span>
+              </div>
+              <span className="text-sm font-medium text-brand-deepPlum hidden md:inline">Dashboard</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="text-right">
+                <p className="text-xs font-medium text-gray-700">{userName}</p>
+                <p className="text-[10px] text-gray-400">{userRole}</p>
+              </div>
+              <button
+                onClick={handleLogout}
+                className="flex items-center gap-1 text-xs bg-red-50 text-red-600 hover:bg-red-100 px-3 py-1.5 rounded-lg font-medium transition-colors"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Logout</span>
+              </button>
+            </div>
+          </header>
+
+          <main className="flex-1 overflow-x-hidden overflow-y-auto p-5 bg-gray-50">
+            <Outlet />
+          </main>
+        </div>
+      </div>
+
+      {/* Fallback for mobile (already handled above, but keep for safety) */}
+      <div className="lg:hidden">
+        <main className="p-4 bg-gray-50 min-h-screen">
           <Outlet />
         </main>
       </div>

@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Payment Receipt - {{ receipt_info.receipt_number }}</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;500;600;700&family=Roboto:wght@400;500;700&display=swap');
+
+        @page {
+            size: A4;
+            margin: 1cm; 
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Roboto', 'Noto Sans Bengali', sans-serif;
+            margin: 0;
+            padding: 0;
+            font-size: 13px;
+            background: #f4f4f9;
+            color: #333;
+        }
+
+        .receipt-container {
+            max-width: 100%;
+            margin: 0 auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* ডাইনামিক ওয়াটারমার্ক (Paid অথবা Due) */
+        .watermark {
+            position: absolute;
+            top: 45%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-45deg);
+            font-size: 120px;
+            font-weight: bold;
+            z-index: -1;
+            pointer-events: none;
+        }
+        .watermark.paid { color: rgba(16, 185, 129, 0.05); } /* হালকা সবুজ */
+        .watermark.due { color: rgba(239, 68, 68, 0.05); } /* হালকা লাল */
+
+        @media print {
+            body { background: #fff; }
+            .receipt-container { box-shadow: none; border: none; padding: 0; }
+            .print-btn { display: none !important; }
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            border-bottom: 2px solid #1e3a8a;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+
+        .school-name {
+            font-size: 22px;
+            font-weight: 700;
+            color: #1e3a8a;
+            margin: 0 0 5px 0;
+            text-transform: uppercase;
+        }
+
+        .school-address { font-size: 12px; color: #555; line-height: 1.5; }
+        .receipt-header-info { text-align: right; }
+        
+        .receipt-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #1e3a8a;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+
+        .badge {
+            display: inline-block;
+            color: white;
+            padding: 4px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 13px;
+        }
+        .badge-paid { background: #10b981; }
+        .badge-due { background: #ef4444; }
+
+        .info-section { display: flex; justify-content: space-between; margin-bottom: 20px; }
+        .info-block { width: 48%; background: #f8fafc; padding: 10px 15px; border-radius: 6px; border: 1px solid #e2e8f0; }
+        .info-table { width: 100%; border-collapse: collapse; }
+        .info-table td { padding: 4px 0; vertical-align: top; font-size: 12px; }
+        .label { font-weight: 600; color: #64748b; width: 90px; }
+        .value { font-weight: 500; color: #0f172a; }
+
+        .items-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
+        .items-table th { background-color: #1e3a8a; color: #ffffff; text-align: left; padding: 8px 10px; font-size: 12px; border: 1px solid #1e3a8a; }
+        .items-table td { padding: 8px 10px; border: 1px solid #cbd5e1; color: #333; font-size: 12px; }
+        .items-table th:last-child, .items-table td:last-child { text-align: right; }
+        .items-table tbody tr:nth-child(even) { background-color: #f8fafc; }
+
+        .total-row { background-color: #f1f5f9 !important; }
+        .total-row td { font-weight: 700; font-size: 13px; color: #0f172a; border-top: 2px solid #1e3a8a; }
+        .summary-row td { font-size: 13px; padding-top: 5px !important; padding-bottom: 5px !important; }
+
+        .footer-section { margin-top: 50px; page-break-inside: avoid; }
+        .signatures { display: flex; justify-content: space-between; margin-bottom: 20px; }
+        .sig-box { text-align: center; width: 180px; }
+        .sig-line { border-top: 1px solid #333; margin-bottom: 6px; }
+        .sig-text { font-size: 11px; color: #64748b; font-weight: 600; }
+        .terms { font-size: 10px; color: #64748b; border-top: 1px solid #e2e8f0; padding-top: 10px; line-height: 1.5; }
+
+        .print-btn { text-align: center; margin: 15px 0; }
+        .print-btn button { background: #1e3a8a; color: white; border: none; padding: 10px 20px; border-radius: 5px; font-size: 14px; cursor: pointer; font-weight: 600; }
+    </style>
+</head>
+<body>
+
+<div class="print-btn">
+    <button onclick="window.print()">🖨️ Print Receipt</button>
+</div>
+
+<div class="receipt-container">
+    
+    <div class="watermark {% if receipt_info.due_amount > 0 %}due{% else %}paid{% endif %}">
+        {% if receipt_info.due_amount > 0 %}DUE{% else %}PAID{% endif %}
+    </div>
+    
+    <div class="header">
+        <div class="school-info">
+            <h1 class="school-name">Dhaka Ideal Academy</h1>
+            <div class="school-address">
+                House #12, Road #4, Dhanmondi, Dhaka-1209<br>
+                <strong>Phone:</strong> +880 1712-345678<br>
+                <strong>Email:</strong> info@dhakaideal.edu.bd<br>
+                <strong>EIIN:</strong> 108345
+            </div>
+        </div>
+        <div class="receipt-header-info">
+            <div class="receipt-title">Payment Receipt</div>
+            <div class="badge {% if receipt_info.due_amount > 0 %}badge-due{% else %}badge-paid{% endif %}">
+                {% if receipt_info.due_amount > 0 %}PARTIAL PAID{% else %}FULLY PAID{% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="info-section">
+        <div class="info-block">
+            <table class="info-table">
+                <tr>
+                    <td class="label">Receipt No:</td>
+                    <td class="value">{{ receipt_info.receipt_number|default:"N/A" }}</td>
+                </tr>
+                <tr>
+                    <td class="label">Date:</td>
+                    <td class="value">{{ receipt_info.payment_date|date:"d M, Y" }}</td>
+                </tr>
+                <tr>
+                    <td class="label">Method:</td>
+                    <td class="value">{{ receipt_info.method|default:"Cash" }}</td>
+                </tr>
+            </table>
+        </div>
+        <div class="info-block">
+            <table class="info-table">
+                <tr>
+                    <td class="label">Student Name:</td>
+                    <td class="value">{{ receipt_info.student.name }}</td>
+                </tr>
+                <tr>
+                    <td class="label">Student ID:</td>
+                    <td class="value">{{ receipt_info.student.student_id }}</td>
+                </tr>
+                <tr>
+                    <td class="label">Class & Sec:</td>
+                    <td class="value">{{ receipt_info.student.class_level.name }} - {{ receipt_info.student.section.name }}</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    <table class="items-table">
+        <thead>
+            <tr>
+                <th width="10%">Sl No.</th>
+                <th width="45%">Fee Description</th>
+                <th width="25%">Month / Year</th>
+                <th width="20%">Amount (৳)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for p in payments %}
+            <tr>
+                <td>{{ forloop.counter }}</td>
+                <td>{{ p.fee_category.name }}</td>
+                <td>{{ p.month }}, {{ p.year }}</td>
+                <td>{{ p.amount_paid }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="4" style="text-align: center;">No payment details found.</td>
+            </tr>
+            {% endfor %}
+            
+            <tr class="total-row">
+                <td colspan="3" style="text-align: right; padding-right: 20px;">Total Bill Amount:</td>
+                <td>৳ {{ receipt_info.total_amount|default:"0.00" }}</td>
+            </tr>
+            <tr class="summary-row">
+                <td colspan="3" style="text-align: right; padding-right: 20px; font-weight: bold; color: #0e5c3c;">Paid Amount:</td>
+                <td style="font-weight: bold; color: #0e5c3c;">৳ {{ receipt_info.amount_paid|default:"0.00" }}</td>
+            </tr>
+            <tr class="summary-row">
+                <td colspan="3" style="text-align: right; padding-right: 20px; font-weight: bold; color: #ef4444;">Due Amount:</td>
+                <td style="font-weight: bold; color: #ef4444;">৳ {{ receipt_info.due_amount|default:"0.00" }}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="footer-section">
+        <div class="signatures">
+            <div class="sig-box">
+                <div class="sig-line"></div>
+                <div class="sig-text">Student / Guardian Signature</div>
+            </div>
+            <div class="sig-box">
+                <div class="sig-line"></div>
+                <div class="sig-text">Accounts Officer</div>
+            </div>
+        </div>
+
+        <div class="terms">
+            <strong>Terms & Conditions:</strong><br>
+            1. Fees once paid are strictly non-refundable and non-transferable.<br>
+            2. This receipt is computer-generated and valid as proof of payment.<br>
+            3. Pending dues must be cleared before the final examination.<br>
+            
+            <div style="text-align: center; margin-top: 10px; color: #94a3b8; font-size: 10px;">
+                System Generated Document • Dhaka Ideal Academy • Generated on {{ receipt_info.payment_date|date:"d M Y" }}
+            </div>
+        </div>
+    </div>
+
+</div>
+
+</body>
+</html>

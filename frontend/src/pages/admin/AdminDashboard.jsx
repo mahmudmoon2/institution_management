@@ -1,20 +1,18 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { Link } from 'react-router-dom';
 import api from '../../api/axios';
 
-// --- কাস্টম অ্যানিমেটেড সার্কুলার প্রোগ্রেস কম্পোনেন্ট ---
+// --- Helper: Circular Progress (unchanged) ---
 const CircularProgress = ({ percentage, color, icon }) => {
   const radius = 32;
   const circumference = 2 * Math.PI * radius;
   const strokeDashoffset = circumference - (percentage / 100) * circumference;
-
   return (
     <div className="relative flex items-center justify-center w-24 h-24 shrink-0">
       <svg className="w-full h-full transform -rotate-90">
-        {/* Background Circle */}
         <circle cx="48" cy="48" r={radius} stroke="currentColor" strokeWidth="8" fill="transparent" className="text-gray-100" />
-        {/* Animated Foreground Circle */}
         <motion.circle
           cx="48" cy="48" r={radius}
           stroke={color}
@@ -27,305 +25,564 @@ const CircularProgress = ({ percentage, color, icon }) => {
           strokeLinecap="round"
         />
       </svg>
-      {/* Icon Inside Circle */}
-      <div className="absolute text-2xl drop-shadow-sm">
-        {icon}
+      <div className="absolute text-2xl drop-shadow-sm">{icon}</div>
+    </div>
+  );
+};
+
+// --- Helper: image URL ---
+const getImageUrl = (path) => {
+  if (!path) return null;
+  if (path.startsWith('http')) return path;
+  return `${import.meta.env.VITE_MEDIA_BASE_URL}${path}`;
+};
+
+// --- Predefined colors for pie chart slices ---
+const PIE_COLORS = ['#5DD9C1', '#B084CC', '#665687', '#ACFCD9', '#190933', '#F59E0B', '#EF4444', '#3B82F6'];
+
+// --- Daily quote list ---
+const quotes = [
+  "The only way to do great work is to love what you do. – Steve Jobs",
+  "Education is the most powerful weapon which you can use to change the world. – Nelson Mandela",
+  "Live as if you were to die tomorrow. Learn as if you were to live forever. – Gandhi",
+  "Success is not final, failure is not fatal: it is the courage to continue that counts. – Churchill",
+  "Believe you can and you're halfway there. – Theodore Roosevelt",
+  "The future belongs to those who believe in the beauty of their dreams. – Eleanor Roosevelt",
+  "Strive not to be a success, but rather to be of value. – Albert Einstein",
+  "It does not matter how slowly you go as long as you do not stop. – Confucius",
+  "The only limit to our realization of tomorrow is our doubts of today. – Franklin D. Roosevelt",
+  "Don't watch the clock; do what it does. Keep going. – Sam Levenson",
+];
+
+const getDailyQuote = () => {
+  const start = new Date(new Date().getFullYear(), 0, 0);
+  const diff = new Date() - start;
+  const oneDay = 86400000;
+  const dayOfYear = Math.floor(diff / oneDay);
+  return quotes[dayOfYear % quotes.length];
+};
+
+// --- Gold Analog Clock Component ---
+const AnalogClock = ({ time }) => {
+  const hours = time.getHours() % 12;
+  const minutes = time.getMinutes();
+  const seconds = time.getSeconds();
+
+  const hourDeg = (hours * 30) + (minutes * 0.5);
+  const minuteDeg = (minutes * 6);
+  const secondDeg = (seconds * 6);
+
+  const pendulumAngle = Math.sin(seconds * Math.PI / 30) * 12;
+
+  return (
+    <div className="relative w-24 h-24 sm:w-28 sm:h-28">
+      <svg viewBox="0 0 200 200" className="w-full h-full drop-shadow-md">
+        <circle cx="100" cy="100" r="96" fill="#F5F0DC" stroke="#D4AF37" strokeWidth="5" />
+        <circle cx="100" cy="100" r="88" fill="#FFF8E7" stroke="#B8860B" strokeWidth="2" />
+        {[...Array(12)].map((_, i) => {
+          const angle = (i * 30) * Math.PI / 180;
+          const x1 = 100 + 72 * Math.sin(angle);
+          const y1 = 100 - 72 * Math.cos(angle);
+          const x2 = 100 + 82 * Math.sin(angle);
+          const y2 = 100 - 82 * Math.cos(angle);
+          return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke="#B8860B" strokeWidth="3" />;
+        })}
+        {[...Array(60)].map((_, i) => {
+          if (i % 5 === 0) return null;
+          const angle = (i * 6) * Math.PI / 180;
+          const x1 = 100 + 76 * Math.sin(angle);
+          const y1 = 100 - 76 * Math.cos(angle);
+          const x2 = 100 + 82 * Math.sin(angle);
+          const y2 = 100 - 82 * Math.cos(angle);
+          return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke="#D4AF37" strokeWidth="1.5" />;
+        })}
+        <line
+          x1="100" y1="100"
+          x2={100 + 32 * Math.sin(hourDeg * Math.PI / 180)}
+          y2={100 - 32 * Math.cos(hourDeg * Math.PI / 180)}
+          stroke="#8B5A2B" strokeWidth="5" strokeLinecap="round"
+        />
+        <line
+          x1="100" y1="100"
+          x2={100 + 50 * Math.sin(minuteDeg * Math.PI / 180)}
+          y2={100 - 50 * Math.cos(minuteDeg * Math.PI / 180)}
+          stroke="#8B5A2B" strokeWidth="3" strokeLinecap="round"
+        />
+        <line
+          x1="100" y1="100"
+          x2={100 + 58 * Math.sin(secondDeg * Math.PI / 180)}
+          y2={100 - 58 * Math.cos(secondDeg * Math.PI / 180)}
+          stroke="#DC143C" strokeWidth="1.5" strokeLinecap="round"
+        />
+        <circle cx="100" cy="100" r="5" fill="#D4AF37" />
+        <circle cx="100" cy="100" r="2" fill="#8B5A2B" />
+      </svg>
+      <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2">
+        <svg width="24" height="30" viewBox="0 0 40 50" className="overflow-visible">
+          <line
+            x1="20" y1="0" x2="20" y2="30"
+            stroke="#D4AF37" strokeWidth="2"
+            style={{ transformOrigin: '20px 0px', transform: `rotate(${pendulumAngle}deg)`, transition: 'transform 0.2s linear' }}
+          />
+          <circle cx="20" cy="30" r="6" fill="#D4AF37" stroke="#B8860B" strokeWidth="1" />
+        </svg>
       </div>
     </div>
   );
 };
 
 export default function AdminDashboard() {
-  const [statsData, setStatsData] = useState({ 
-    total_students: 0, total_teachers: 0, 
-    students_present: 0, teachers_present: 0,
-    student_percentage: 0, teacher_percentage: 0 
+  const [adminName, setAdminName] = useState('');
+  const [stats, setStats] = useState({
+    totalStudents: 0,
+    activeStudents: 0,
+    newAdmissions: 0,
+    totalTeachers: 0,
   });
+  const [classSummary, setClassSummary] = useState([]);
   const [chartData, setChartData] = useState([]);
   const [historyList, setHistoryList] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // লাইভ ঘড়ির জন্য স্টেট
+  // Search state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResult, setSearchResult] = useState(null);
+  const [searchError, setSearchError] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
+  const [allStudents, setAllStudents] = useState([]);
+
+  // Modal states for students list
+  const [isStudentListModalOpen, setIsStudentListModalOpen] = useState(false);
+  const [studentList, setStudentList] = useState([]);
+  const [studentFilters, setStudentFilters] = useState({ classLevel: '', section: '' });
+  const [classLevels, setClassLevels] = useState([]);
+  const [sections, setSections] = useState([]);
+  const [isLoadingStudentList, setIsLoadingStudentList] = useState(false);
+  const [selectedStudentDetail, setSelectedStudentDetail] = useState(null);
+
+  // Modal states for teachers list
+  const [isTeacherListModalOpen, setIsTeacherListModalOpen] = useState(false);
+  const [teacherList, setTeacherList] = useState([]);
+  const [isLoadingTeacherList, setIsLoadingTeacherList] = useState(false);
+
+  // Live clock
   const [currentTime, setCurrentTime] = useState(new Date());
 
-  // Modal States
-  const [isTeacherModalOpen, setIsTeacherModalOpen] = useState(false);
-  const [todayTeacherDetails, setTodayTeacherDetails] = useState([]);
-  const [isLoadingTeacherDetails, setIsLoadingTeacherDetails] = useState(false);
-
-  const [isStudentModalOpen, setIsStudentModalOpen] = useState(false);
-  const [todayStudentDetails, setTodayStudentDetails] = useState([]);
-  const [isLoadingStudentDetails, setIsLoadingStudentDetails] = useState(false);
-
-  // লাইভ ঘড়ির টিক টিক আপডেট
   useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 1000);
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
 
+  // Fetch all dashboard data
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        try {
-          const res = await api.get('/dashboard-stats/');
-          setStatsData({
-            total_students: res.data.total_students || 0,
-            total_teachers: res.data.total_teachers || 0,
-            students_present: res.data.students_present || 0,
-            teachers_present: res.data.teachers_present || 0,
-            student_percentage: res.data.student_percentage || 0,
-            teacher_percentage: res.data.teacher_percentage || 0
-          });
-          setChartData(res.data.chartData || []);
-        } catch (e) { console.error("Stats not loaded"); }
+        const meRes = await api.get('/me/');
+        setAdminName(meRes.data.name || 'Admin');
 
+        // 1. Fetch total students & total teachers from /dashboard-stats/
+        let totalStudents = 0, totalTeachers = 0;
+        try {
+          const dashRes = await api.get('/dashboard-stats/');
+          totalStudents = dashRes.data.total_students || 0;
+          totalTeachers = dashRes.data.total_teachers || 0;
+          setChartData(dashRes.data.chartData || []);
+        } catch (e) { console.warn("Dashboard stats not available"); }
+
+        // 2. Fetch all students (for active count & new admissions)
+        let students = [];
+        try {
+          const studentsRes = await api.get('/students/');
+          students = studentsRes.data;
+          setAllStudents(students);
+        } catch (e) { console.warn("Students list not available"); }
+
+        // 3. Compute active students and new admissions (last 30 days)
+        const activeCount = students.filter(s => s.is_active === true).length;
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        const newAdmissionsCount = students.filter(s => {
+          if (!s.admission_date) return false;
+          return new Date(s.admission_date) >= thirtyDaysAgo;
+        }).length;
+
+        // 4. Fetch class summary (if endpoint exists)
+        try {
+          const classRes = await api.get('/academics/class-summary/');
+          setClassSummary(classRes.data);
+          const pieData = classRes.data.map(cls => ({ name: cls.class_name, value: cls.student_count }));
+          setChartData(pieData.length ? pieData : chartData);
+        } catch (e) { console.warn("Class summary not available"); }
+
+        // 5. Teacher presentation history
         try {
           const histRes = await api.get('/teachers/class-history/');
           setHistoryList(histRes.data);
-        } catch (e) { console.error("History not loaded"); }
+        } catch (e) { console.warn("History not available"); }
+
+        // Set stats
+        setStats({
+          totalStudents,
+          activeStudents: activeCount,
+          newAdmissions: newAdmissionsCount,
+          totalTeachers,
+        });
+      } catch (err) {
+        console.error("Dashboard data fetch error", err);
       } finally {
         setIsLoading(false);
       }
     };
     fetchDashboardData();
+
+    // Load class levels and sections for filter dropdowns
+    const fetchFilters = async () => {
+      try {
+        const classesRes = await api.get('/academics/classes/');
+        setClassLevels(classesRes.data);
+        if (classesRes.data.length) {
+          const secRes = await api.get(`/academics/sections/?class=${classesRes.data[0].id}`);
+          setSections(secRes.data);
+        }
+      } catch (e) { console.warn("Filter data not loaded"); }
+    };
+    fetchFilters();
   }, []);
 
-  // লোকাল ডেট বের করার ফাংশন (যাতে টাইমজোন সমস্যা না করে)
-  const getLocalDate = () => {
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = String(today.getMonth() + 1).padStart(2, '0');
-    const day = String(today.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  };
-
-  const openTeacherDetails = async () => {
-    setIsTeacherModalOpen(true);
-    setIsLoadingTeacherDetails(true);
-    try {
-      const res = await api.get('/teachers/teacher-attendance/');
-      const localToday = getLocalDate();
-      setTodayTeacherDetails(res.data.filter(item => item.date === localToday));
-    } catch (error) {
-      console.error("Failed to fetch teacher attendance details");
-    } finally {
-      setIsLoadingTeacherDetails(false);
+  // Student list modal handlers
+  const handleClassChange = async (classId) => {
+    setStudentFilters({ classLevel: classId, section: '' });
+    if (classId) {
+      try {
+        const secRes = await api.get(`/academics/sections/?class=${classId}`);
+        setSections(secRes.data);
+      } catch (e) { console.warn("Sections not loaded"); }
+    } else {
+      setSections([]);
     }
   };
 
-  const openStudentDetails = async () => {
-    setIsStudentModalOpen(true);
-    setIsLoadingStudentDetails(true);
+  const openStudentListModal = async () => {
+    setIsStudentListModalOpen(true);
+    await fetchStudentList();
+  };
+
+  const fetchStudentList = async () => {
+    setIsLoadingStudentList(true);
     try {
-      const res = await api.get('/students/student-attendance/');
-      const localToday = getLocalDate();
-      setTodayStudentDetails(res.data.filter(item => item.date === localToday));
-    } catch (error) {
-      console.error("Failed to fetch student attendance details");
+      const params = {};
+      if (studentFilters.classLevel) params.class_level = studentFilters.classLevel;
+      if (studentFilters.section) params.section = studentFilters.section;
+      const res = await api.get('/students/', { params });
+      setStudentList(res.data);
+    } catch (err) {
+      console.error("Failed to fetch students", err);
     } finally {
-      setIsLoadingStudentDetails(false);
+      setIsLoadingStudentList(false);
     }
   };
+
+  const openTeacherListModal = async () => {
+    setIsTeacherListModalOpen(true);
+    setIsLoadingTeacherList(true);
+    try {
+      const res = await api.get('/teachers/');
+      setTeacherList(res.data);
+    } catch (err) {
+      console.error("Failed to fetch teachers", err);
+    } finally {
+      setIsLoadingTeacherList(false);
+    }
+  };
+
+  // Search (client-side)
+  const handleSearch = async () => {
+    if (!searchQuery.trim()) return;
+    setIsSearching(true);
+    setSearchError('');
+    setSearchResult(null);
+
+    try {
+      let students = allStudents;
+      if (students.length === 0) {
+        const res = await api.get('/students/');
+        students = res.data;
+        setAllStudents(students);
+      }
+      const queryLower = searchQuery.trim().toLowerCase();
+      const found = students.find(student =>
+        student.name?.toLowerCase().includes(queryLower) ||
+        student.student_id?.toLowerCase().includes(queryLower) ||
+        student.roll_number?.toString().includes(queryLower)
+      );
+      if (found) {
+        const classLevel = classLevels.find(c => c.id === found.class_level);
+        const section = sections.find(s => s.id === found.section);
+        setSearchResult({
+          ...found,
+          class_level_name: classLevel?.name || '',
+          section_name: section?.name || '',
+        });
+      } else {
+        setSearchError('Student not found');
+      }
+    } catch (err) {
+      setSearchError('Failed to search. Please try again.');
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const dateString = currentTime.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+  const weekday = currentTime.toLocaleDateString('en-US', { weekday: 'long' });
+  const greeting = (() => {
+    const hour = currentTime.getHours();
+    if (hour < 12) return 'Good Morning';
+    if (hour < 18) return 'Good Afternoon';
+    return 'Good Evening';
+  })();
 
   if (isLoading) {
-    return <div className="flex items-center justify-center h-full text-brand-deepPlum font-semibold">Loading Dashboard Data...</div>;
+    return <div className="flex items-center justify-center h-full text-brand-deepPlum font-semibold">Loading Dashboard...</div>;
   }
 
-  // সময় এবং তারিখের ফরম্যাটিং
-  const timeString = currentTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true });
-  const dateString = currentTime.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+  const maxPerClass = 50;
 
   return (
     <div className="space-y-6 relative pb-10">
-      
-      {/* Welcome Header (Live Clock Added Here) */}
-      <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-brand-deepPlum mb-1">Welcome back, Admin! 👋</h1>
-          <p className="text-gray-500 font-medium">Here is what's happening in your institution today.</p>
-        </div>
-        
-        {/* Live Clock Section */}
-        <div className="flex items-center gap-4 bg-brand-softLavender/10 px-6 py-3 rounded-xl border border-brand-softLavender/20">
-          <div className="text-3xl animate-pulse">🕰️</div>
-          <div>
-            <p className="text-2xl font-bold text-brand-royalPurple tracking-wider">{timeString}</p>
-            <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">{dateString}</p>
+      {/* Welcome Header with Search Bar & Gold Analog Clock + Quote */}
+      <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+          <div className="flex-1">
+            <h1 className="text-3xl font-bold text-brand-deepPlum mb-1">Welcome back, {adminName}! 👋</h1>
+            <p className="text-gray-500 font-medium">Your full Overview here</p>
+          </div>
+          <div className="flex items-center gap-4 flex-wrap">
+            <AnalogClock time={currentTime} />
+            <div>
+              <div className="text-sm font-semibold text-brand-deepPlum">{greeting}</div>
+              <div className="text-xs text-gray-500">{weekday}, {dateString}</div>
+              <div className="text-xs italic text-brand-royalPurple mt-1 max-w-[200px] sm:max-w-[300px]">{getDailyQuote()}</div>
+            </div>
           </div>
         </div>
+
+        {/* Search Bar */}
+        <div className="mt-6 flex flex-col md:flex-row gap-3 items-start md:items-center">
+          <div className="relative flex-1">
+            <input
+              type="text"
+              placeholder="🔍 Find student (by name, ID or roll number)"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+              className="w-full px-5 py-3 rounded-xl border border-gray-200 focus:border-brand-tealCyan focus:outline-none bg-gray-50"
+            />
+            <button
+              onClick={handleSearch}
+              disabled={isSearching}
+              className="absolute right-2 top-1/2 -translate-y-1/2 bg-brand-deepPlum text-white px-5 py-1.5 rounded-lg text-sm font-semibold hover:bg-brand-royalPurple transition"
+            >
+              {isSearching ? 'Searching...' : 'Go'}
+            </button>
+          </div>
+        </div>
+
+        {searchResult && (
+          <div
+            onClick={() => setSelectedStudentDetail(searchResult)}
+            className="mt-4 p-4 bg-green-50 rounded-xl border border-green-200 flex items-center gap-4 cursor-pointer hover:bg-green-100 transition"
+          >
+            <div className="w-12 h-12 rounded-full bg-brand-tealCyan/20 flex items-center justify-center text-2xl">
+              {searchResult.photo ? <img src={getImageUrl(searchResult.photo)} alt="" className="w-full h-full rounded-full object-cover" /> : '👨‍🎓'}
+            </div>
+            <div>
+              <p className="font-bold text-brand-deepPlum">{searchResult.name}</p>
+              <p className="text-sm text-gray-600">ID: {searchResult.student_id} | Roll: {searchResult.roll_number}</p>
+              <p className="text-sm text-gray-500">Class: {searchResult.class_level_name} - {searchResult.section_name}</p>
+            </div>
+          </div>
+        )}
+        {searchError && <p className="mt-2 text-red-500 text-sm">{searchError}</p>}
       </motion.div>
 
-      {/* Stats Cards with Circular Animations */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        
-        {/* Student Attendance Card */}
-        <motion.div 
-          onClick={openStudentDetails}
-          initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} 
-          className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md hover:border-brand-tealCyan cursor-pointer transition-all group flex items-center gap-4 overflow-hidden relative"
-        >
-          <div className="absolute top-3 right-3 text-[10px] font-bold bg-gray-100 text-gray-500 px-2 py-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity">View List ↗</div>
-          
-          <CircularProgress percentage={statsData.student_percentage} color="#5DD9C1" icon="👨‍🎓" />
-          
-          <div>
-            <h3 className="text-gray-500 text-sm font-semibold mb-1">Students</h3>
-            <p className="text-2xl font-bold text-brand-deepPlum">
-              {statsData.students_present} <span className="text-sm text-gray-400 font-medium">/ {statsData.total_students}</span>
-            </p>
-            <p className="text-xs font-bold text-[#0e5c3c] mt-1">{statsData.student_percentage}% Present</p>
-          </div>
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <motion.div whileHover={{ scale: 1.02 }} onClick={openStudentListModal} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 cursor-pointer hover:shadow-md transition-all">
+          <div className="flex items-center justify-between mb-2"><span className="text-2xl">👨‍🎓</span><span className="text-xs text-gray-400">Total</span></div>
+          <p className="text-2xl font-bold text-brand-deepPlum">{stats.totalStudents}</p>
+          <p className="text-xs text-gray-500 mt-1">Total Students</p>
         </motion.div>
-
-        {/* Teacher Attendance Card */}
-        <motion.div 
-          onClick={openTeacherDetails}
-          initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} 
-          className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md hover:border-brand-softLavender cursor-pointer transition-all group flex items-center gap-4 overflow-hidden relative"
-        >
-          <div className="absolute top-3 right-3 text-[10px] font-bold bg-gray-100 text-gray-500 px-2 py-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity">View List ↗</div>
-          
-          <CircularProgress percentage={statsData.teacher_percentage} color="#9b87f5" icon="👩‍🏫" />
-          
-          <div>
-            <h3 className="text-gray-500 text-sm font-semibold mb-1">Teachers</h3>
-            <p className="text-2xl font-bold text-brand-deepPlum">
-              {statsData.teachers_present} <span className="text-sm text-gray-400 font-medium">/ {statsData.total_teachers}</span>
-            </p>
-            <p className="text-xs font-bold text-brand-royalPurple mt-1">{statsData.teacher_percentage}% Present</p>
-          </div>
-        </motion.div>
-
-        {/* Other Regular Cards */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-center">
-          <div className="flex items-center justify-between mb-3"><div className="w-10 h-10 rounded-full flex items-center justify-center text-xl bg-brand-mintGreen/20 text-[#0e5c3c]">🏆</div></div>
-          <h3 className="text-gray-500 text-sm font-semibold">A+ Achievers</h3>
-          <p className="text-2xl font-bold text-brand-deepPlum mt-1">320+</p>
-        </motion.div>
-
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-center">
-          <div className="flex items-center justify-between mb-3"><div className="w-10 h-10 rounded-full flex items-center justify-center text-xl bg-brand-royalPurple/20 text-brand-royalPurple">🏫</div></div>
-          <h3 className="text-gray-500 text-sm font-semibold">Years of Legacy</h3>
-          <p className="text-2xl font-bold text-brand-deepPlum mt-1">25+</p>
+        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+          <div className="flex items-center justify-between mb-2"><span className="text-2xl">✅</span><span className="text-xs text-gray-400">Active</span></div>
+          <p className="text-2xl font-bold text-brand-deepPlum">{stats.activeStudents}</p>
+          <p className="text-xs text-gray-500 mt-1">Active Students</p>
+        </div>
+        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+          <div className="flex items-center justify-between mb-2"><span className="text-2xl">🆕</span><span className="text-xs text-gray-400">Last 30d</span></div>
+          <p className="text-2xl font-bold text-brand-deepPlum">{stats.newAdmissions}</p>
+          <p className="text-xs text-gray-500 mt-1">New Admissions</p>
+        </div>
+        <motion.div whileHover={{ scale: 1.02 }} onClick={openTeacherListModal} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 cursor-pointer hover:shadow-md transition-all">
+          <div className="flex items-center justify-between mb-2"><span className="text-2xl">👩‍🏫</span><span className="text-xs text-gray-400">Total</span></div>
+          <p className="text-2xl font-bold text-brand-deepPlum">{stats.totalTeachers}</p>
+          <p className="text-xs text-gray-500 mt-1">Total Teachers</p>
         </motion.div>
       </div>
 
-      {/* Charts & Actions */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-          <div className="flex justify-between items-center mb-6 border-b pb-4">
-            <h2 className="text-xl font-bold text-brand-deepPlum">Revenue Growth</h2>
+      {/* Class Summary */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+        <h2 className="text-xl font-bold text-brand-deepPlum mb-4">Class Summary</h2>
+        {classSummary.length === 0 ? (
+          <p className="text-gray-500">No class data available.</p>
+        ) : (
+          <div className="space-y-4">
+            {classSummary.map((cls) => (
+              <div key={cls.class_name}>
+                <div className="flex justify-between text-sm mb-1">
+                  <span className="font-semibold text-brand-deepPlum">{cls.class_name}</span>
+                  <span className="text-gray-500">{cls.student_count} students</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2.5">
+                  <div className="bg-brand-tealCyan h-2.5 rounded-full" style={{ width: `${(cls.student_count / maxPerClass) * 100}%` }}></div>
+                </div>
+              </div>
+            ))}
           </div>
-          <div className="h-[300px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <defs><linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#5DD9C1" stopOpacity={0.8}/><stop offset="95%" stopColor="#5DD9C1" stopOpacity={0}/></linearGradient></defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
-                <XAxis dataKey="name" stroke="#9CA3AF" fontSize={12} tickLine={false} axisLine={false} />
-                <YAxis stroke="#9CA3AF" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `৳${val/1000}k`} />
-                <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-                <Area type="monotone" dataKey="revenue" stroke="#5DD9C1" strokeWidth={3} fillOpacity={1} fill="url(#colorRev)" />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </motion.div>
+        )}
+      </div>
 
-        <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="bg-brand-deepPlum p-6 rounded-2xl shadow-sm text-white flex flex-col">
-          <h2 className="text-xl font-bold mb-6 text-brand-softLavender border-b border-white/10 pb-4">Quick Actions</h2>
-          <div className="space-y-4 flex-1">
-            <button className="w-full bg-white/10 hover:bg-brand-tealCyan hover:text-brand-deepPlum transition-colors text-left px-5 py-4 rounded-xl font-semibold flex items-center justify-between group">
-              <span className="flex items-center gap-3"><span className="text-xl">📝</span> Add New Notice</span><span className="group-hover:translate-x-1 transition-transform">→</span>
-            </button>
-            <button className="w-full bg-white/10 hover:bg-brand-tealCyan hover:text-brand-deepPlum transition-colors text-left px-5 py-4 rounded-xl font-semibold flex items-center justify-between group">
-              <span className="flex items-center gap-3"><span className="text-xl">👨‍🎓</span> Register Student</span><span className="group-hover:translate-x-1 transition-transform">→</span>
-            </button>
+      {/* Pie Chart & Quick Actions */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+          <h2 className="text-xl font-bold text-brand-deepPlum mb-4">Student Distribution by Class</h2>
+          {chartData.length === 0 ? (
+            <div className="h-64 flex items-center justify-center text-gray-500">No data available</div>
+          ) : (
+            <ResponsiveContainer width="100%" height={350}>
+              <PieChart>
+                <Pie
+                  data={chartData}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  outerRadius={120}
+                  fill="#8884d8"
+                  dataKey="value"
+                  nameKey="name"
+                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                >
+                  {chartData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip formatter={(value, name) => [`${value} students`, name]} />
+                <Legend verticalAlign="bottom" height={36} />
+              </PieChart>
+            </ResponsiveContainer>
+          )}
+        </div>
+        <div className="bg-brand-deepPlum p-6 rounded-2xl text-white">
+          <h2 className="text-xl font-bold mb-4">Quick Actions</h2>
+          <div className="space-y-3">
+            <Link to="/admin/students/add" className="w-full bg-white/10 hover:bg-brand-tealCyan hover:text-brand-deepPlum transition px-4 py-3 rounded-xl font-semibold flex justify-between items-center group">
+              <span>👨‍🎓 Register Student</span><span className="group-hover:translate-x-1 transition">→</span>
+            </Link>
+            <Link to="/admin/fee-categories" className="w-full bg-white/10 hover:bg-brand-tealCyan hover:text-brand-deepPlum transition px-4 py-3 rounded-xl font-semibold flex justify-between items-center group">
+              <span>💰 Manage Fees</span><span className="group-hover:translate-x-1 transition">→</span>
+            </Link>
+            <Link to="/admin/notices/add" className="w-full bg-white/10 hover:bg-brand-tealCyan hover:text-brand-deepPlum transition px-4 py-3 rounded-xl font-semibold flex justify-between items-center group">
+              <span>📢 Add Notice</span><span className="group-hover:translate-x-1 transition">→</span>
+            </Link>
+            <Link to="/admin/events/add" className="w-full bg-white/10 hover:bg-brand-tealCyan hover:text-brand-deepPlum transition px-4 py-3 rounded-xl font-semibold flex justify-between items-center group">
+              <span>🗓️ Add Event</span><span className="group-hover:translate-x-1 transition">→</span>
+            </Link>
           </div>
-        </motion.div>
+        </div>
       </div>
 
       {/* Recent Teacher Presentations */}
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-[#F5F0FF]">
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="p-6 border-b bg-[#F5F0FF]">
           <h2 className="text-xl font-bold text-brand-deepPlum">Recent Teacher Presentations</h2>
         </div>
-        <div className="overflow-x-auto max-h-[500px] overflow-y-auto p-4">
+        <div className="p-4 max-h-[400px] overflow-y-auto">
           {historyList.length === 0 ? (
-            <div className="text-center py-10 text-gray-500 font-semibold">No class presentations found.</div>
+            <p className="text-center text-gray-500 py-10">No presentations found.</p>
           ) : (
             <div className="space-y-3">
-              {historyList.map((record) => (
-                <div key={record.id} className="p-4 border border-gray-100 rounded-xl hover:bg-gray-50 transition-all flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-                  <div className="flex gap-4 items-center">
-                    <div className="bg-brand-tealCyan/20 text-brand-deepPlum p-3 rounded-xl text-center shrink-0 w-16">
-                      <span className="block text-lg font-bold">{new Date(record.date).getDate()}</span>
-                      <span className="block text-[10px] uppercase font-bold">{new Date(record.date).toLocaleString('default', { month: 'short' })}</span>
-                    </div>
+              {historyList.map(record => (
+                <div key={record.id} className="p-4 border rounded-xl hover:bg-gray-50">
+                  <div className="flex justify-between items-start flex-wrap gap-2">
                     <div>
-                      <h4 className="font-bold text-brand-deepPlum text-base mb-1">
-                        <span className="text-brand-royalPurple mr-2">{record.teacher_name}:</span> {record.topic_covered}
-                      </h4>
-                      <div className="text-xs text-gray-500 flex flex-wrap gap-2 items-center">
-                        <span className="bg-gray-100 px-2 py-1 rounded font-semibold text-brand-deepPlum border">{record.class_level_name} - {record.section_name}</span>
-                        <span className="font-bold text-brand-tealCyan">{record.subject_name}</span>
-                      </div>
+                      <p className="font-bold text-brand-deepPlum">{record.topic_covered}</p>
+                      <p className="text-sm text-gray-500">{record.teacher_name} | {record.class_level_name} - {record.section_name} | {record.subject_name}</p>
                     </div>
-                  </div>
-                  <div className="text-right flex items-center gap-3">
-                     <span className="text-xs font-bold text-gray-600 bg-white border border-gray-200 px-3 py-1.5 rounded-lg shrink-0 shadow-sm">
-                       ⏱️ {record.start_time.substring(0,5)} - {record.end_time.substring(0,5)}
-                     </span>
+                    <span className="text-xs bg-gray-100 px-3 py-1 rounded-full">{record.start_time.substring(0,5)} - {record.end_time.substring(0,5)}</span>
                   </div>
                 </div>
               ))}
             </div>
           )}
         </div>
-      </motion.div>
+      </div>
 
-      {/* --- Teacher Attendance Modal --- */}
+      {/* ========== STUDENT LIST MODAL (with class/section filters) ========== */}
       <AnimatePresence>
-        {isTeacherModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-brand-deepPlum/40 backdrop-blur-sm">
-            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden border border-gray-100">
-              <div className="bg-brand-softLavender/20 p-6 flex justify-between items-center border-b border-gray-100">
+        {isStudentListModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-white rounded-3xl shadow-2xl w-full max-w-4xl max-h-[80vh] flex flex-col overflow-hidden">
+              <div className="p-6 border-b flex justify-between items-center bg-gray-50">
                 <div>
-                  <h3 className="text-xl font-bold text-brand-deepPlum">Today's Teacher Attendance</h3>
-                  <p className="text-sm text-gray-500 font-medium">{dateString}</p>
+                  <h3 className="text-xl font-bold text-brand-deepPlum">All Students</h3>
+                  <p className="text-sm text-gray-500">Filter by class and section</p>
                 </div>
-                <button onClick={() => setIsTeacherModalOpen(false)} className="w-8 h-8 flex items-center justify-center rounded-full bg-white text-gray-500 hover:text-red-500 hover:bg-red-50 transition-colors font-bold">✕</button>
+                <button onClick={() => setIsStudentListModalOpen(false)} className="w-8 h-8 rounded-full bg-gray-200 hover:bg-red-100 transition">✕</button>
               </div>
-              <div className="p-6 max-h-[60vh] overflow-y-auto">
-                {isLoadingTeacherDetails ? (
-                  <p className="text-center text-gray-500 font-semibold py-10">Loading details...</p>
-                ) : todayTeacherDetails.length === 0 ? (
-                  <div className="text-center py-10 text-gray-500 font-semibold"><span className="text-4xl block mb-2">🤷‍♂️</span>Attendance hasn't been recorded yet for today.</div>
+              <div className="p-6 border-b flex gap-4 flex-wrap">
+                <select
+                  className="px-4 py-2 border rounded-xl"
+                  value={studentFilters.classLevel}
+                  onChange={(e) => handleClassChange(e.target.value)}
+                >
+                  <option value="">All Classes</option>
+                  {classLevels.map(cls => <option key={cls.id} value={cls.id}>{cls.name}</option>)}
+                </select>
+                <select
+                  className="px-4 py-2 border rounded-xl"
+                  value={studentFilters.section}
+                  onChange={(e) => setStudentFilters({ ...studentFilters, section: e.target.value })}
+                  disabled={!studentFilters.classLevel}
+                >
+                  <option value="">All Sections</option>
+                  {sections.map(sec => <option key={sec.id} value={sec.id}>{sec.name}</option>)}
+                </select>
+                <button onClick={fetchStudentList} className="bg-brand-tealCyan text-brand-deepPlum font-bold px-5 py-2 rounded-xl">Apply Filter</button>
+              </div>
+              <div className="flex-1 overflow-y-auto p-6">
+                {isLoadingStudentList ? (
+                  <p className="text-center py-10">Loading...</p>
+                ) : studentList.length === 0 ? (
+                  <p className="text-center py-10 text-gray-500">No students found.</p>
                 ) : (
-                  <table className="w-full text-left border-collapse">
-                    <thead>
-                      <tr className="bg-gray-50 text-gray-500 text-sm">
-                        <th className="p-3 font-semibold rounded-l-lg">Teacher Name</th>
-                        <th className="p-3 font-semibold">Status</th>
-                        <th className="p-3 font-semibold rounded-r-lg">Notes</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {todayTeacherDetails.map(record => (
-                        <tr key={record.id} className="border-b border-gray-50 hover:bg-gray-50/50">
-                          <td className="p-3 font-bold text-brand-deepPlum">{record.teacher_name}</td>
-                          <td className="p-3">
-                            <span className={`px-2.5 py-1 rounded-md text-xs font-bold ${
-                              record.status === 'Present' ? 'bg-brand-mintGreen/20 text-[#0e5c3c]' :
-                              record.status === 'Absent' ? 'bg-red-100 text-red-600' :
-                              record.status === 'On-Leave' ? 'bg-purple-100 text-purple-600' : 'bg-orange-100 text-orange-600'
-                            }`}>{record.status}</span>
-                          </td>
-                          <td className="p-3 text-sm text-gray-500">{record.note || '-'}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {studentList.map(student => (
+                      <div
+                        key={student.id}
+                        onClick={() => setSelectedStudentDetail(student)}
+                        className="border rounded-xl p-4 hover:shadow-md cursor-pointer transition flex items-center gap-4"
+                      >
+                        <div className="w-12 h-12 rounded-full bg-brand-softLavender/20 flex items-center justify-center text-xl">
+                          {student.photo ? <img src={getImageUrl(student.photo)} alt="" className="w-full h-full rounded-full object-cover" /> : '👨‍🎓'}
+                        </div>
+                        <div>
+                          <p className="font-bold text-brand-deepPlum">{student.name}</p>
+                          <p className="text-sm text-gray-500">ID: {student.student_id} | Roll: {student.roll_number}</p>
+                          <p className="text-xs text-gray-400">{student.class_level_name} - {student.section_name}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 )}
               </div>
             </motion.div>
@@ -333,53 +590,71 @@ export default function AdminDashboard() {
         )}
       </AnimatePresence>
 
-      {/* --- Student Attendance Modal --- */}
+      {/* ========== STUDENT DETAIL POPUP ========== */}
       <AnimatePresence>
-        {isStudentModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-brand-deepPlum/40 backdrop-blur-sm">
-            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden border border-gray-100">
-              <div className="bg-brand-tealCyan/20 p-6 flex justify-between items-center border-b border-gray-100">
-                <div>
-                  <h3 className="text-xl font-bold text-brand-deepPlum">Today's Student Attendance</h3>
-                  <p className="text-sm text-gray-600 font-medium">{dateString}</p>
-                </div>
-                <button onClick={() => setIsStudentModalOpen(false)} className="w-8 h-8 flex items-center justify-center rounded-full bg-white text-gray-500 hover:text-red-500 hover:bg-red-50 transition-colors font-bold">✕</button>
+        {selectedStudentDetail && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="bg-white rounded-3xl shadow-2xl max-w-lg w-full p-6">
+              <div className="flex justify-between items-start mb-4">
+                <h3 className="text-2xl font-bold text-brand-deepPlum">Student Details</h3>
+                <button onClick={() => setSelectedStudentDetail(null)} className="text-gray-400 hover:text-red-500 text-2xl">✕</button>
               </div>
-              <div className="p-6 max-h-[60vh] overflow-y-auto">
-                {isLoadingStudentDetails ? (
-                  <p className="text-center text-gray-500 font-semibold py-10">Loading details...</p>
-                ) : todayStudentDetails.length === 0 ? (
-                  <div className="text-center py-10 text-gray-500 font-semibold"><span className="text-4xl block mb-2">🤷‍♂️</span>Attendance hasn't been recorded yet for today.</div>
+              <div className="flex gap-5 items-start">
+                <div className="w-24 h-24 rounded-full bg-brand-royalPurple/20 flex items-center justify-center text-4xl overflow-hidden">
+                  {selectedStudentDetail.photo ? <img src={getImageUrl(selectedStudentDetail.photo)} alt="" className="w-full h-full object-cover" /> : '👨‍🎓'}
+                </div>
+                <div className="flex-1">
+                  <p><strong>Name:</strong> {selectedStudentDetail.name}</p>
+                  <p><strong>ID:</strong> {selectedStudentDetail.student_id}</p>
+                  <p><strong>Roll:</strong> {selectedStudentDetail.roll_number}</p>
+                  <p><strong>Class:</strong> {selectedStudentDetail.class_level_name} - {selectedStudentDetail.section_name}</p>
+                  <p><strong>Date of Birth:</strong> {selectedStudentDetail.date_of_birth}</p>
+                  <p><strong>Gender:</strong> {selectedStudentDetail.gender}</p>
+                  <p><strong>Guardian:</strong> {selectedStudentDetail.guardian_name} ({selectedStudentDetail.guardian_phone})</p>
+                  <p><strong>Address:</strong> {selectedStudentDetail.present_address}</p>
+                </div>
+              </div>
+              <button onClick={() => setSelectedStudentDetail(null)} className="mt-6 w-full bg-brand-deepPlum text-white py-2 rounded-xl">Close</button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ========== TEACHER LIST MODAL ========== */}
+      <AnimatePresence>
+        {isTeacherListModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-white rounded-3xl shadow-2xl w-full max-w-3xl max-h-[80vh] flex flex-col overflow-hidden">
+              <div className="p-6 border-b flex justify-between items-center bg-gray-50">
+                <h3 className="text-xl font-bold text-brand-deepPlum">All Teachers</h3>
+                <button onClick={() => setIsTeacherListModalOpen(false)} className="w-8 h-8 rounded-full bg-gray-200 hover:bg-red-100 transition">✕</button>
+              </div>
+              <div className="flex-1 overflow-y-auto p-6">
+                {isLoadingTeacherList ? (
+                  <p className="text-center py-10">Loading...</p>
+                ) : teacherList.length === 0 ? (
+                  <p className="text-center py-10 text-gray-500">No teachers found.</p>
                 ) : (
-                  <table className="w-full text-left border-collapse">
-                    <thead>
-                      <tr className="bg-gray-50 text-gray-500 text-sm">
-                        <th className="p-3 font-semibold rounded-l-lg">Student Name</th>
-                        <th className="p-3 font-semibold">Status</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {todayStudentDetails.map(record => (
-                        <tr key={record.id} className="border-b border-gray-50 hover:bg-gray-50/50">
-                          <td className="p-3 font-bold text-brand-deepPlum">{record.student_name}</td>
-                          <td className="p-3">
-                            <span className={`px-2.5 py-1 rounded-md text-xs font-bold ${
-                              record.status === 'Present' ? 'bg-brand-mintGreen/20 text-[#0e5c3c]' :
-                              record.status === 'Absent' ? 'bg-red-100 text-red-600' :
-                              record.status === 'Late' ? 'bg-orange-100 text-orange-600' : 'bg-gray-200 text-gray-700'
-                            }`}>{record.status}</span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {teacherList.map(teacher => (
+                      <div key={teacher.id} className="border rounded-xl p-4 flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-full bg-brand-softLavender/20 flex items-center justify-center text-xl">
+                          {teacher.photo ? <img src={getImageUrl(teacher.photo)} alt="" className="w-full h-full rounded-full object-cover" /> : '👩‍🏫'}
+                        </div>
+                        <div>
+                          <p className="font-bold text-brand-deepPlum">{teacher.name}</p>
+                          <p className="text-sm text-gray-500">ID: {teacher.teacher_id} | {teacher.major_subject_name}</p>
+                          <p className="text-xs text-gray-400">{teacher.email}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 )}
               </div>
             </motion.div>
           </div>
         )}
       </AnimatePresence>
-
     </div>
   );
 }

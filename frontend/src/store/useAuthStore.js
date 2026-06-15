@@ -10,15 +10,15 @@ export const useAuthStore = create((set) => ({
     login: async (username, password, role) => {
         set({ isLoading: true, error: null });
         try {
-            // Django SimpleJWT ডিফল্টভাবে 'username' এবং 'password' রিসিভ করে
-            const response = await api.post('/login/', { username, password });
-            const { access, refresh } = response.data;
+            // Send role along with username and password
+            const response = await api.post('/login/', { username, password, role });
+            const { access, refresh, role: userRole } = response.data;
 
             localStorage.setItem('access_token', access);
             localStorage.setItem('refresh_token', refresh);
-            localStorage.setItem('user_role', role);
+            localStorage.setItem('user_role', userRole); // Use backend-returned role
 
-            set({ token: access, userRole: role, isLoading: false });
+            set({ token: access, userRole: userRole, isLoading: false });
             return true;
         } catch (error) {
             set({ 
