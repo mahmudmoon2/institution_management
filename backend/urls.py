@@ -3,7 +3,7 @@ from django.urls import include, path
 from rest_framework_simplejwt.views import TokenRefreshView
 from django.conf import settings
 from django.conf.urls.static import static
-from users.views import CustomTokenObtainPairView   # ✅ already imported
+from users.views import CustomTokenObtainPairView, admin_change_password, search_users
 
 # Import required views
 from students.views import current_user_info, dashboard_stats
@@ -25,4 +25,8 @@ urlpatterns = [
     path('api/v1/inventory/', include('inventory.urls')),
     path('api/v1/notifications/', include('notifications.urls')),
     path('api/v1/recruitment/', include('recruitment.urls')),
+    path('api/v1/staffs/', include('staffs.urls')),
+    path('api/v1/payroll/', include('payroll.urls')),
+    path('api/v1/admin/change-password/', admin_change_password, name='admin-change-password'),
+    path('api/v1/admin/search-users/', search_users, name='admin-search-users'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

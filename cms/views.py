@@ -39,11 +39,9 @@ class NoticeViewSet(viewsets.ModelViewSet):
     def download_pdf(self, request, pk=None):
         notice = self.get_object()
         html_string = render_to_string('cms/notice_pdf.html', {'notice': notice})
-        response = HttpResponse(content_type='application/pdf')
+        pdf_file = HTML(string=html_string, base_url=request.build_absolute_uri()).write_pdf()
+        response = HttpResponse(pdf_file, content_type='application/pdf')
         response['Content-Disposition'] = f'attachment; filename="notice_{notice.id}.pdf"'
-        pisa_status = pisa.CreatePDF(html_string, dest=response)
-        if pisa_status.err:
-            return HttpResponse('Error generating PDF')
         return response
 
 # ---------- Event (পাবলিক GET, প্রটেক্টেড POST/PUT/DELETE) ----------

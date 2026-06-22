@@ -7,7 +7,6 @@ export default function SMSGateway() {
   const [isLoading, setIsLoading] = useState(false);
   const [msg, setMsg] = useState({ type: '', text: '' });
 
-  const [channel, setChannel] = useState('WhatsApp');
   const [audience, setAudience] = useState('Custom');
   const [customNumbers, setCustomNumbers] = useState('');
   const [smsType, setSmsType] = useState('Custom');
@@ -21,10 +20,6 @@ export default function SMSGateway() {
     'Attendance': 'Dear Guardian, this is to inform you that your child was marked absent today. If this was not informed earlier, please contact the class teacher. - Ideal Academy'
   };
 
-  useEffect(() => {
-    fetchLogs();
-  }, []);
-
   const fetchLogs = async () => {
     try {
       const res = await api.get('/notifications/sms-logs/');
@@ -34,19 +29,15 @@ export default function SMSGateway() {
     }
   };
 
+  useEffect(() => {
+    fetchLogs();
+  }, []);
+
   // ক্যাটাগরি চেঞ্জ করলে অটোমেটিক টেমপ্লেট বসে যাবে
   const handleSmsTypeChange = (e) => {
     const type = e.target.value;
     setSmsType(type);
     setMessage(templates[type]);
-  };
-
-  const formatPhoneForWA = (phone) => {
-    let cleanPhone = phone.replace(/[^0-9]/g, '');
-    if (cleanPhone.startsWith('0')) {
-      cleanPhone = '88' + cleanPhone;
-    }
-    return cleanPhone;
   };
 
   const handleSendSMS = async (e) => {
@@ -78,25 +69,14 @@ export default function SMSGateway() {
         return;
       }
 
-      // ডাটাবেসে লগ সেভ করা
+      // লোকালি ডাটাবেসে SMS লগ সেভ করা
       await api.post('/notifications/send-bulk-sms/', {
         recipients,
-        message: `[${channel}] ${message}`,
+        message: message,
         sms_type: smsType
       });
 
-      // WhatsApp এ মেসেজ ওপেন করার লজিক
-      if (channel === 'WhatsApp') {
-        recipients.forEach((phone, index) => {
-          const waPhone = formatPhoneForWA(phone);
-          const text = encodeURIComponent(message);
-          setTimeout(() => {
-            window.open(`https://wa.me/${waPhone}?text=${text}`, '_blank');
-          }, index * 800); 
-        });
-      }
-
-      setMsg({ type: 'success', text: `Success! Prepared to send ${channel} to ${recipients.length} real recipients.` });
+      setMsg({ type: 'success', text: `Success! ${recipients.length} messages logged to local database.` });
       setMessage('');
       setCustomNumbers('');
       setSmsType('Custom');
@@ -105,7 +85,7 @@ export default function SMSGateway() {
 
     } catch (error) {
       console.error(error);
-      setMsg({ type: 'error', text: `Failed to process ${channel}. Check backend connection or database.` });
+      setMsg({ type: 'error', text: `Failed to send messages. Check backend connection or database.` });
     } finally {
       setIsLoading(false);
     }
@@ -121,9 +101,9 @@ export default function SMSGateway() {
           <span className="inline-block px-3 py-1 bg-brand-tealCyan/20 text-brand-tealCyan font-bold text-xs rounded-full mb-3 tracking-wider uppercase border border-brand-tealCyan/30">
             Communication Module
           </span>
-          <h1 className="text-3xl font-bold mb-2">Smart Messaging Gateway</h1>
+          <h1 className="text-3xl font-bold mb-2">Local SMS Gateway</h1>
           <p className="text-gray-300 text-sm leading-relaxed max-w-lg">
-            Broadcast messages directly to registered Parents and Teachers. Select a category to use auto-generated professional templates.
+            Compose and log SMS messages locally. Messages are saved in the database for record keeping. Select a category to use auto-generated professional templates.
           </p>
         </div>
         <div className="absolute right-0 bottom-0 opacity-10 pointer-events-none transform translate-x-1/4 translate-y-1/4">
@@ -141,26 +121,17 @@ export default function SMSGateway() {
         
         {/* Left Column: Compose Message */}
         <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="lg:col-span-1 bg-white p-6 rounded-2xl shadow-sm border border-gray-100 h-fit">
-          <h2 className="text-lg font-bold text-brand-deepPlum mb-4 border-b pb-2">Compose Broadcast</h2>
+          <h2 className="text-lg font-bold text-brand-deepPlum mb-4 border-b pb-2">Compose SMS</h2>
           
           <form onSubmit={handleSendSMS} className="space-y-4">
             
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className={labelClass}>Channel *</label>
-                <select value={channel} onChange={(e) => setChannel(e.target.value)} className={inputClass}>
-                  <option value="WhatsApp">WhatsApp</option>
-                  <option value="SMS">SMS Gateway</option>
-                </select>
-              </div>
-              <div>
-                <label className={labelClass}>Audience *</label>
-                <select value={audience} onChange={(e) => setAudience(e.target.value)} className={inputClass}>
-                  <option value="Custom">Custom Numbers</option>
-                  <option value="All Parents">All Registered Parents</option>
-                  <option value="All Teachers">All Teachers</option>
-                </select>
-              </div>
+            <div>
+              <label className={labelClass}>Audience *</label>
+              <select value={audience} onChange={(e) => setAudience(e.target.value)} className={inputClass}>
+                <option value="Custom">Custom Numbers</option>
+                <option value="All Parents">All Registered Parents</option>
+                <option value="All Teachers">All Teachers</option>
+              </select>
             </div>
 
             {audience === 'Custom' && (
@@ -199,8 +170,8 @@ export default function SMSGateway() {
               ></textarea>
             </div>
 
-            <button type="submit" disabled={isLoading} className={`w-full py-3 rounded-xl font-bold transition-colors shadow-md mt-2 flex items-center justify-center gap-2 ${isLoading ? 'bg-gray-400 text-white' : channel === 'WhatsApp' ? 'bg-[#25D366] hover:bg-[#1DA851] text-white' : 'bg-brand-tealCyan hover:bg-[#4bc2ab] text-brand-deepPlum'}`}>
-              {isLoading ? 'Fetching Data & Processing...' : channel === 'WhatsApp' ? <><span>📱</span> Send via WhatsApp</> : <><span>🚀</span> Queue SMS</>}
+            <button type="submit" disabled={isLoading} className={`w-full py-3 rounded-xl font-bold transition-colors shadow-md mt-2 flex items-center justify-center gap-2 ${isLoading ? 'bg-gray-400 text-white' : 'bg-brand-tealCyan hover:bg-[#4bc2ab] text-brand-deepPlum'}`}>
+              {isLoading ? 'Saving to Database...' : <><span>📨</span> Log SMS to Database</>}
             </button>
           </form>
         </motion.div>
@@ -208,7 +179,7 @@ export default function SMSGateway() {
         {/* Right Column: Delivery Logs */}
         <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden h-fit flex flex-col">
           <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-[#F5F0FF]">
-            <h2 className="text-lg font-bold text-brand-deepPlum">Delivery Logs</h2>
+            <h2 className="text-lg font-bold text-brand-deepPlum">SMS Log History</h2>
             <span className="text-xs font-bold text-brand-royalPurple bg-white px-3 py-1 rounded-full border border-brand-softLavender/30">Total: {logs.length}</span>
           </div>
           

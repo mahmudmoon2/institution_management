@@ -23,7 +23,7 @@ class SMSLogViewSet(viewsets.ReadOnlyModelViewSet):
 
 class SendBulkSMSView(APIView):
     """
-    Bulk SMS বা WhatsApp মেসেজ পাঠানোর কাস্টম এন্ডপয়েন্ট
+    Bulk SMS পাঠানোর লোকাল এন্ডপয়েন্ট (ডাটাবেসে লগ সেভ হয়, লোকালি সিমুলেটেড)
     """
     permission_classes = [IsAuthenticated]
 
@@ -37,12 +37,7 @@ class SendBulkSMSView(APIView):
 
         logs = []
         for phone in recipients:
-            # ---------------------------------------------------------
-            # TODO: এখানে Twilio বা Local BD SMS Gateway এর API কল হবে
-            # Example: client.messages.create(to=phone, from_='+123', body=message)
-            # ---------------------------------------------------------
-            
-            # আমরা আপাতত সিমুলেট করছি যে মেসেজ সাকসেসফুলি সেন্ড হয়েছে
+            # লোকাল SMS সিস্টেম: মেসেজ ডাটাবেসে লগ হয়
             delivery_status = 'Sent'
 
             logs.append(
@@ -59,6 +54,6 @@ class SendBulkSMSView(APIView):
         SMSLog.objects.bulk_create(logs)
 
         return Response({
-            "message": f"Successfully sent and logged {len(logs)} messages.",
+            "message": f"Successfully logged {len(logs)} messages to local database.",
             "total_sent": len(logs)
         }, status=status.HTTP_200_OK)

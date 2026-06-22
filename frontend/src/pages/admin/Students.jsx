@@ -8,10 +8,23 @@ export default function Students() {
   const [students, setStudents] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedStudent, setSelectedStudent] = useState(null);      // for detail modal
+  
+  const [selectedStudent, setSelectedStudent] = useState(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [studentToDelete, setStudentToDelete] = useState(null);
+
+  // Status Toggle Modal State
+  const [statusModal, setStatusModal] = useState({ show: false, student: null });
+
+  // Custom Toast State
+  const [toast, setToast] = useState({ show: false, message: '', type: 'error' });
+
+  const showToast = (message, type = 'error') => {
+    setToast({ show: true, message, type });
+    setTimeout(() => setToast({ show: false, message: '', type: '' }), 3000);
+  };
 
   useEffect(() => {
     const fetchStudents = async () => {
@@ -45,9 +58,10 @@ export default function Students() {
       setStudents(students.filter(s => s.id !== studentToDelete.id));
       setIsDeleteModalOpen(false);
       setStudentToDelete(null);
+      showToast("Student deleted successfully!", "success");
     } catch (error) {
       console.error("Error deleting student", error);
-      alert("Failed to delete student. Please try again.");
+      showToast("Failed to delete student. Please try again.", "error");
     }
   };
 
@@ -61,14 +75,69 @@ export default function Students() {
     setIsDetailModalOpen(false);
   };
 
+  // Trigger Custom Confirmation Modal instead of browser alert
+  const handleToggleStatus = (student, e) => {
+    if (e) e.stopPropagation(); 
+    setStatusModal({ show: true, student });
+  };
+
+  // Perform actual API call after confirmation
+  const confirmToggleStatus = async () => {
+    const student = statusModal.student;
+    if (!student) return;
+
+    try {
+      const response = await api.patch(`/students/${student.id}/`, {
+        is_active: !student.is_active
+      });
+
+      const updatedStudent = response.data;
+      setStudents(students.map(s => s.id === student.id ? updatedStudent : s));
+      
+      if (selectedStudent && selectedStudent.id === student.id) {
+        setSelectedStudent(updatedStudent);
+      }
+      
+      setStatusModal({ show: false, student: null });
+      showToast(`Student successfully ${updatedStudent.is_active ? 'activated' : 'deactivated'}!`, "success");
+    } catch (error) {
+      console.error("Failed to toggle status", error);
+      showToast("Failed to update student status.", "error");
+      setStatusModal({ show: false, student: null });
+    }
+  };
+
+  const handlePrintIdCard = async (studentId) => {
+    try {
+      const response = await api.get(`/students/id-card/${studentId}/pdf/`, { responseType: 'blob' });
+      const fileURL = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+      window.open(fileURL, '_blank');
+      showToast("ID Card generated successfully!", "success");
+    } catch (error) {
+      console.error("Failed to fetch PDF", error);
+      showToast("Failed to generate ID Card. Please check your permissions or connection.", "error");
+    }
+  };
+
   return (
     <div className="relative">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-        className="space-y-6"
-      >
+      
+      {/* Toast Notification */}
+      <AnimatePresence>
+        {toast.show && (
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 50 }}
+            className={`fixed bottom-6 right-6 z-[100] px-6 py-3 rounded-xl shadow-lg font-bold text-white flex items-center gap-3 ${toast.type === 'error' ? 'bg-red-500' : 'bg-[#0e5c3c]'}`}
+          >
+            <span>{toast.type === 'error' ? '⚠️' : '✅'}</span>
+            <span>{toast.message}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="space-y-6">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
           <div>
             <h1 className="text-2xl font-bold text-brand-deepPlum">Student Directory</h1>
@@ -85,10 +154,7 @@ export default function Students() {
               />
               <span className="absolute left-3 top-2.5 text-gray-400">🔍</span>
             </div>
-            <Link
-              to="/admin/students/add"
-              className="bg-brand-royalPurple hover:bg-brand-deepPlum text-white px-5 py-2.5 rounded-xl font-medium transition-colors flex items-center gap-2 text-sm shadow-sm shrink-0"
-            >
+            <Link to="/admin/students/add" className="bg-brand-royalPurple hover:bg-brand-deepPlum text-white px-5 py-2.5 rounded-xl font-medium transition-colors flex items-center gap-2 text-sm shadow-sm shrink-0">
               <span>➕</span>
               <span className="hidden sm:inline">Add Student</span>
             </Link>
@@ -118,7 +184,7 @@ export default function Students() {
                     <tr
                       key={student.id}
                       onClick={() => openDetailModal(student)}
-                      className="hover:bg-gray-50 transition-colors cursor-pointer group"
+                      className={`transition-colors cursor-pointer group ${!student.is_active ? 'bg-gray-50/50 opacity-75' : 'hover:bg-gray-50'}`}
                     >
                       <td className="py-4 px-6 text-sm font-medium text-brand-royalPurple">{student.student_id}</td>
                       <td className="py-4 px-6 text-sm font-semibold text-brand-deepPlum">{student.name}</td>
@@ -127,25 +193,21 @@ export default function Students() {
                       </td>
                       <td className="py-4 px-6 text-sm text-gray-600">{student.roll_number}</td>
                       <td className="py-4 px-6 text-sm">
-                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${student.is_active ? 'bg-brand-mintGreen/30 text-[#0e5c3c]' : 'bg-red-50 text-red-600'}`}>
+                        <button
+                          onClick={(e) => handleToggleStatus(student, e)}
+                          title="Click to toggle status"
+                          className={`px-3 py-1 rounded-full text-xs font-bold transition-all border ${
+                            student.is_active 
+                              ? 'bg-brand-mintGreen/30 text-[#0e5c3c] border-transparent hover:border-[#0e5c3c]' 
+                              : 'bg-red-50 text-red-600 border-transparent hover:border-red-600'
+                          }`}
+                        >
                           {student.is_active ? 'Active' : 'Inactive'}
-                        </span>
+                        </button>
                       </td>
                       <td className="py-4 px-6 text-right space-x-2" onClick={(e) => e.stopPropagation()}>
-                        <Link
-                          to={`/admin/students/edit/${student.id}`}
-                          className="text-gray-400 hover:text-brand-tealCyan transition-colors p-2 inline-block"
-                          title="Edit Student"
-                        >
-                          ✏️
-                        </Link>
-                        <button
-                          onClick={(e) => handleDeleteClick(student, e)}
-                          className="text-gray-400 hover:text-red-500 transition-colors p-2"
-                          title="Delete Student"
-                        >
-                          🗑️
-                        </button>
+                        <Link to={`/admin/students/edit/${student.id}`} className="text-gray-400 hover:text-brand-tealCyan transition-colors p-2 inline-block" title="Edit Student">✏️</Link>
+                        <button onClick={(e) => handleDeleteClick(student, e)} className="text-gray-400 hover:text-red-500 transition-colors p-2" title="Delete Student">🗑️</button>
                       </td>
                     </tr>
                   ))
@@ -156,34 +218,46 @@ export default function Students() {
         </div>
       </motion.div>
 
+      {/* Status Toggle Confirmation Modal */}
+      <AnimatePresence>
+        {statusModal.show && statusModal.student && (
+          <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/30 backdrop-blur-sm p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="bg-white w-full max-w-sm rounded-2xl p-6 shadow-2xl"
+            >
+              <div className="text-center">
+                <div className="w-16 h-16 rounded-full bg-blue-50 text-brand-tealCyan flex items-center justify-center text-3xl mx-auto mb-4">🔄</div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">Change Status?</h3>
+                <p className="text-gray-500 text-sm mb-6">Are you sure you want to <strong>{statusModal.student.is_active ? 'Deactivate' : 'Activate'}</strong> {statusModal.student.name}?</p>
+                <div className="flex gap-3">
+                  <button onClick={() => setStatusModal({ show: false, student: null })} className="flex-1 px-4 py-2.5 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition">Cancel</button>
+                  <button onClick={confirmToggleStatus} className="flex-1 px-4 py-2.5 bg-brand-deepPlum text-white rounded-xl font-medium hover:bg-brand-royalPurple transition">Yes, Confirm</button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
       {/* Student Detail Modal */}
       <AnimatePresence>
         {isDetailModalOpen && selectedStudent && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm overflow-y-auto">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white rounded-3xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto"
-            >
-              <div className="sticky top-0 bg-white border-b p-5 flex justify-between items-center">
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-white rounded-3xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto flex flex-col">
+              <div className="sticky top-0 bg-white border-b p-5 flex justify-between items-center z-10">
                 <h2 className="text-2xl font-bold text-brand-deepPlum">Student Details</h2>
                 <button onClick={closeDetailModal} className="text-gray-400 hover:text-red-500 text-2xl leading-none">✕</button>
               </div>
-              <div className="p-6">
+              <div className="p-6 flex-1">
                 <div className="flex flex-col md:flex-row gap-8">
-                  {/* Photo */}
                   <div className="flex-shrink-0">
-                    <div className="w-40 h-40 rounded-full overflow-hidden bg-gray-100 border-4 border-brand-tealCyan shadow-md">
-                      {selectedStudent.photo ? (
-                        <img src={getImageUrl(selectedStudent.photo)} alt={selectedStudent.name} className="w-full h-full object-cover" />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-6xl bg-brand-softLavender/20">👨‍🎓</div>
-                      )}
+                    <div className={`w-40 h-40 rounded-full overflow-hidden bg-gray-100 border-4 shadow-md ${selectedStudent.is_active ? 'border-brand-tealCyan' : 'border-gray-300 grayscale'}`}>
+                      {selectedStudent.photo ? <img src={getImageUrl(selectedStudent.photo)} alt={selectedStudent.name} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-6xl bg-brand-softLavender/20">👨‍🎓</div>}
                     </div>
                   </div>
-
-                  {/* Information Grid */}
                   <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                     <div><span className="font-semibold text-gray-700">Full Name:</span> <span className="text-gray-900">{selectedStudent.name}</span></div>
                     <div><span className="font-semibold text-gray-700">Student ID:</span> <span className="text-gray-900">{selectedStudent.student_id}</span></div>
@@ -195,10 +269,16 @@ export default function Students() {
                     <div><span className="font-semibold text-gray-700">Blood Group:</span> <span className="text-gray-900">{selectedStudent.blood_group || 'N/A'}</span></div>
                     <div><span className="font-semibold text-gray-700">Religion:</span> <span className="text-gray-900">{selectedStudent.religion || 'N/A'}</span></div>
                     <div><span className="font-semibold text-gray-700">Admission Date:</span> <span className="text-gray-900">{selectedStudent.admission_date}</span></div>
-                    <div><span className="font-semibold text-gray-700">Status:</span>
-                      <span className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${selectedStudent.is_active ? 'bg-brand-mintGreen/30 text-[#0e5c3c]' : 'bg-red-50 text-red-600'}`}>
-                        {selectedStudent.is_active ? 'Active' : 'Inactive'}
-                      </span>
+                    <div>
+                      <span className="font-semibold text-gray-700">Status:</span>
+                      <button
+                        onClick={() => handleToggleStatus(selectedStudent)}
+                        className={`ml-2 px-3 py-1 rounded-full text-xs font-bold transition-all border ${
+                          selectedStudent.is_active ? 'bg-brand-mintGreen/30 text-[#0e5c3c] hover:bg-brand-mintGreen/50' : 'bg-red-50 text-red-600 hover:bg-red-100'
+                        }`}
+                      >
+                        {selectedStudent.is_active ? 'Active' : 'Inactive'} 🔄
+                      </button>
                     </div>
                     <div className="md:col-span-2"><span className="font-semibold text-gray-700">Guardian Name:</span> <span className="text-gray-900">{selectedStudent.guardian_name}</span></div>
                     <div><span className="font-semibold text-gray-700">Guardian Phone:</span> <span className="text-gray-900">{selectedStudent.guardian_phone}</span></div>
@@ -208,31 +288,34 @@ export default function Students() {
                   </div>
                 </div>
               </div>
-              <div className="sticky bottom-0 bg-gray-50 p-4 text-right border-t">
-                <button onClick={closeDetailModal} className="px-6 py-2 bg-brand-deepPlum text-white rounded-xl hover:bg-brand-royalPurple transition">Close</button>
+              <div className="sticky bottom-0 bg-gray-50 p-4 border-t flex justify-end gap-3 z-10">
+                <button onClick={closeDetailModal} className="px-6 py-2.5 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 transition font-bold">Close</button>
+                <button 
+                  onClick={() => handlePrintIdCard(selectedStudent.student_id)}
+                  disabled={!selectedStudent.is_active}
+                  className={`px-6 py-2.5 rounded-xl transition font-bold flex items-center gap-2 ${selectedStudent.is_active ? 'bg-brand-tealCyan text-brand-deepPlum hover:bg-[#4bc2ab]' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}
+                  title={!selectedStudent.is_active ? "Activate student to print ID" : "Print ID Card"}
+                >
+                  🖨️ Print ID Card
+                </button>
               </div>
             </motion.div>
           </div>
         )}
       </AnimatePresence>
 
-      {/* Delete Confirmation Modal (unchanged) */}
+      {/* Delete Confirmation Modal */}
       <AnimatePresence>
         {isDeleteModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-4">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              className="bg-white w-full max-w-sm rounded-2xl p-6 shadow-2xl"
-            >
+            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="bg-white w-full max-w-sm rounded-2xl p-6 shadow-2xl">
               <div className="text-center">
                 <div className="w-16 h-16 rounded-full bg-red-50 text-red-500 flex items-center justify-center text-3xl mx-auto mb-4">⚠️</div>
                 <h3 className="text-xl font-bold text-gray-900 mb-2">Delete Student?</h3>
                 <p className="text-gray-500 text-sm mb-6">Are you sure you want to delete <strong>{studentToDelete?.name}</strong>'s record? This action cannot be undone.</p>
                 <div className="flex gap-3">
-                  <button onClick={() => { setIsDeleteModalOpen(false); setStudentToDelete(null); }} className="flex-1 px-4 py-2.5 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200">Cancel</button>
-                  <button onClick={confirmDelete} className="flex-1 px-4 py-2.5 bg-red-500 text-white rounded-xl font-medium hover:bg-red-600">Yes, Delete</button>
+                  <button onClick={() => { setIsDeleteModalOpen(false); setStudentToDelete(null); }} className="flex-1 px-4 py-2.5 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition">Cancel</button>
+                  <button onClick={confirmDelete} className="flex-1 px-4 py-2.5 bg-red-500 text-white rounded-xl font-medium hover:bg-red-600 transition">Yes, Delete</button>
                 </div>
               </div>
             </motion.div>

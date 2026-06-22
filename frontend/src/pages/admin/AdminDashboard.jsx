@@ -1,34 +1,11 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { 
+  PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer, 
+  BarChart, Bar, XAxis, YAxis, CartesianGrid 
+} from 'recharts';
 import { Link } from 'react-router-dom';
 import api from '../../api/axios';
-
-// --- Helper: Circular Progress (unchanged) ---
-const CircularProgress = ({ percentage, color, icon }) => {
-  const radius = 32;
-  const circumference = 2 * Math.PI * radius;
-  const strokeDashoffset = circumference - (percentage / 100) * circumference;
-  return (
-    <div className="relative flex items-center justify-center w-24 h-24 shrink-0">
-      <svg className="w-full h-full transform -rotate-90">
-        <circle cx="48" cy="48" r={radius} stroke="currentColor" strokeWidth="8" fill="transparent" className="text-gray-100" />
-        <motion.circle
-          cx="48" cy="48" r={radius}
-          stroke={color}
-          strokeWidth="8"
-          fill="transparent"
-          strokeDasharray={circumference}
-          initial={{ strokeDashoffset: circumference }}
-          animate={{ strokeDashoffset: strokeDashoffset }}
-          transition={{ duration: 1.5, ease: "easeOut", delay: 0.2 }}
-          strokeLinecap="round"
-        />
-      </svg>
-      <div className="absolute text-2xl drop-shadow-sm">{icon}</div>
-    </div>
-  );
-};
 
 // --- Helper: image URL ---
 const getImageUrl = (path) => {
@@ -139,9 +116,16 @@ export default function AdminDashboard() {
     newAdmissions: 0,
     totalTeachers: 0,
   });
+  
+  // Financial Stats state
+  const [feeStats, setFeeStats] = useState({
+    billed: 0,
+    collected: 0,
+    due: 0
+  });
+
   const [classSummary, setClassSummary] = useState([]);
   const [chartData, setChartData] = useState([]);
-  const [historyList, setHistoryList] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
   // Search state
@@ -168,9 +152,22 @@ export default function AdminDashboard() {
   // Live clock
   const [currentTime, setCurrentTime] = useState(new Date());
 
+  // Live class tracking & attendance summary (auto-refresh)
+  const [liveClasses, setLiveClasses] = useState([]);
+  const [attendanceSummary, setAttendanceSummary] = useState(null);
+
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
+  }, []);
+
+  // Auto-refresh live classes & attendance
+  useEffect(() => {
+    const fetchLive = async () => { try { const r = await api.get('/teachers/live-class-history/'); setLiveClasses(r.data); } catch(e){} };
+    const fetchAtt = async () => { try { const r = await api.get('/students/attendance-summary/'); setAttendanceSummary(r.data); } catch(e){} };
+    fetchLive(); fetchAtt();
+    const interval = setInterval(() => { fetchLive(); fetchAtt(); }, 15000);
+    return () => clearInterval(interval);
   }, []);
 
   // Fetch all dashboard data
@@ -180,7 +177,7 @@ export default function AdminDashboard() {
         const meRes = await api.get('/me/');
         setAdminName(meRes.data.name || 'Admin');
 
-        // 1. Fetch total students & total teachers from /dashboard-stats/
+        // 1. Fetch total students & total teachers
         let totalStudents = 0, totalTeachers = 0;
         try {
           const dashRes = await api.get('/dashboard-stats/');
@@ -189,7 +186,7 @@ export default function AdminDashboard() {
           setChartData(dashRes.data.chartData || []);
         } catch (e) { console.warn("Dashboard stats not available"); }
 
-        // 2. Fetch all students (for active count & new admissions)
+        // 2. Fetch all students
         let students = [];
         try {
           const studentsRes = await api.get('/students/');
@@ -197,7 +194,6 @@ export default function AdminDashboard() {
           setAllStudents(students);
         } catch (e) { console.warn("Students list not available"); }
 
-        // 3. Compute active students and new admissions (last 30 days)
         const activeCount = students.filter(s => s.is_active === true).length;
         const thirtyDaysAgo = new Date();
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
@@ -206,7 +202,7 @@ export default function AdminDashboard() {
           return new Date(s.admission_date) >= thirtyDaysAgo;
         }).length;
 
-        // 4. Fetch class summary (if endpoint exists)
+        // 3. Fetch class summary
         try {
           const classRes = await api.get('/academics/class-summary/');
           setClassSummary(classRes.data);
@@ -214,13 +210,18 @@ export default function AdminDashboard() {
           setChartData(pieData.length ? pieData : chartData);
         } catch (e) { console.warn("Class summary not available"); }
 
-        // 5. Teacher presentation history
+        // 4. Fetch Payments for Financial Overview
         try {
-          const histRes = await api.get('/teachers/class-history/');
-          setHistoryList(histRes.data);
-        } catch (e) { console.warn("History not available"); }
+          const payRes = await api.get('/payments/');
+          const payments = payRes.data;
+          
+          const billed = payments.reduce((sum, p) => sum + Number(p.total_amount || p.amount_paid + p.due_amount), 0);
+          const collected = payments.reduce((sum, p) => sum + Number(p.amount_paid), 0);
+          const due = payments.reduce((sum, p) => sum + Number(p.due_amount), 0);
+          
+          setFeeStats({ billed, collected, due });
+        } catch (e) { console.warn("Payments not available"); }
 
-        // Set stats
         setStats({
           totalStudents,
           activeStudents: activeCount,
@@ -235,7 +236,7 @@ export default function AdminDashboard() {
     };
     fetchDashboardData();
 
-    // Load class levels and sections for filter dropdowns
+    // Load filters
     const fetchFilters = async () => {
       try {
         const classesRes = await api.get('/academics/classes/');
@@ -249,7 +250,7 @@ export default function AdminDashboard() {
     fetchFilters();
   }, []);
 
-  // Student list modal handlers
+  // Handlers
   const handleClassChange = async (classId) => {
     setStudentFilters({ classLevel: classId, section: '' });
     if (classId) {
@@ -295,7 +296,6 @@ export default function AdminDashboard() {
     }
   };
 
-  // Search (client-side)
   const handleSearch = async () => {
     if (!searchQuery.trim()) return;
     setIsSearching(true);
@@ -333,6 +333,20 @@ export default function AdminDashboard() {
     }
   };
 
+  // Secure API call for printing ID Card
+  const handlePrintIdCard = async (studentId) => {
+    try {
+      const response = await api.get(`/students/id-card/${studentId}/pdf/`, {
+        responseType: 'blob', 
+      });
+      const fileURL = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+      window.open(fileURL, '_blank');
+    } catch (error) {
+      console.error("Failed to fetch PDF", error);
+      alert("Failed to generate ID Card. Please check your permissions or connection.");
+    }
+  };
+
   const dateString = currentTime.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
   const weekday = currentTime.toLocaleDateString('en-US', { weekday: 'long' });
   const greeting = (() => {
@@ -347,6 +361,13 @@ export default function AdminDashboard() {
   }
 
   const maxPerClass = 50;
+
+  // Data mapping for Financial Bar Chart
+  const feeChartData = [
+    { name: 'Total Billed', amount: feeStats.billed, fill: '#3B82F6' },    // Blue
+    { name: 'Collected', amount: feeStats.collected, fill: '#10B981' },    // Green
+    { name: 'Due Amount', amount: feeStats.due, fill: '#EF4444' }          // Red
+  ];
 
   return (
     <div className="space-y-6 relative pb-10">
@@ -393,8 +414,8 @@ export default function AdminDashboard() {
             onClick={() => setSelectedStudentDetail(searchResult)}
             className="mt-4 p-4 bg-green-50 rounded-xl border border-green-200 flex items-center gap-4 cursor-pointer hover:bg-green-100 transition"
           >
-            <div className="w-12 h-12 rounded-full bg-brand-tealCyan/20 flex items-center justify-center text-2xl">
-              {searchResult.photo ? <img src={getImageUrl(searchResult.photo)} alt="" className="w-full h-full rounded-full object-cover" /> : '👨‍🎓'}
+            <div className="w-12 h-12 rounded-full bg-brand-tealCyan/20 flex items-center justify-center text-2xl overflow-hidden">
+              {searchResult.photo ? <img src={getImageUrl(searchResult.photo)} alt="" className="w-full h-full object-cover" /> : '👨‍🎓'}
             </div>
             <div>
               <p className="font-bold text-brand-deepPlum">{searchResult.name}</p>
@@ -430,24 +451,131 @@ export default function AdminDashboard() {
         </motion.div>
       </div>
 
-      {/* Class Summary */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-        <h2 className="text-xl font-bold text-brand-deepPlum mb-4">Class Summary</h2>
-        {classSummary.length === 0 ? (
-          <p className="text-gray-500">No class data available.</p>
+      {/* ========== LIVE TEACHING (full width) ========== */}
+      <div className="bg-white p-6 rounded-2xl shadow-sm border">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-bold text-brand-deepPlum flex items-center gap-2">
+            <span className="relative flex h-3 w-3">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+            </span>
+            Live Teaching Activity
+          </h2>
+          <span className="text-xs text-gray-400">Auto-refresh every 15 seconds</span>
+        </div>
+        {liveClasses.length === 0 ? (
+          <div className="text-center py-8 text-gray-400">📚 No class activity recorded yet. Teachers can log classes from their dashboard.</div>
         ) : (
-          <div className="space-y-4">
-            {classSummary.map((cls) => (
-              <div key={cls.class_name}>
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="font-semibold text-brand-deepPlum">{cls.class_name}</span>
-                  <span className="text-gray-500">{cls.student_count} students</span>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead className="bg-gray-50 text-gray-500 text-xs uppercase">
+                <tr>
+                  <th className="p-3 font-semibold">Teacher</th>
+                  <th className="p-3 font-semibold">Subject</th>
+                  <th className="p-3 font-semibold">Class / Section</th>
+                  <th className="p-3 font-semibold">Start - End</th>
+                  <th className="p-3 font-semibold">Topic Covered</th>
+                  <th className="p-3 font-semibold text-center">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {liveClasses.slice(0, 15).map(cls => (
+                  <tr key={cls.id} className="hover:bg-gray-50 border-b border-gray-100 transition-colors">
+                    <td className="p-3 font-semibold text-gray-800">{cls.teacher_name}</td>
+                    <td className="p-3 text-gray-600">{cls.subject_name}</td>
+                    <td className="p-3 text-gray-600">{cls.class_name} - {cls.section_name}</td>
+                    <td className="p-3 text-gray-600 font-mono text-xs">
+                      {cls.start_time} — {cls.end_time || 'Ongoing'}
+                    </td>
+                    <td className="p-3 text-gray-600 max-w-[250px] truncate" title={cls.topic_covered}>
+                      {cls.topic_covered}
+                    </td>
+                    <td className="p-3 text-center">
+                      <span className={`text-[10px] font-bold uppercase px-2.5 py-1 rounded-full ${
+                        cls.status === 'Running' 
+                          ? 'bg-green-100 text-green-700' 
+                          : 'bg-gray-100 text-gray-500'
+                      }`}>
+                        {cls.status === 'Running' ? '🔴 Running' : '✓ Ended'}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* ========== TODAY'S ATTENDANCE (full width) ========== */}
+      <div className="bg-white p-6 rounded-2xl shadow-sm border">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-bold text-brand-deepPlum">📋 Today's Attendance Overview</h2>
+          <button 
+            onClick={() => {
+              api.get('/students/attendance-report/pdf/', { responseType: 'blob' }).then(r => {
+                const url = window.URL.createObjectURL(new Blob([r.data], { type: 'application/pdf' }));
+                window.open(url, '_blank');
+              }).catch(() => alert('Failed to download PDF.'));
+            }} 
+            className="text-xs font-bold px-4 py-2 rounded-lg bg-brand-royalPurple text-white hover:bg-brand-deepPlum transition-colors flex items-center gap-1"
+          >
+            🖨️ Download PDF Report
+          </button>
+        </div>
+        {!attendanceSummary ? (
+          <div className="text-center py-8 text-gray-400">No attendance data available for today yet. Teachers can record attendance from their dashboard.</div>
+        ) : (
+          <div>
+            {/* Summary Cards */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+              {[
+                { label: 'Present', value: attendanceSummary.present, color: 'bg-green-50 text-green-700 border-green-200', icon: '✅' },
+                { label: 'Absent', value: attendanceSummary.absent, color: 'bg-red-50 text-red-600 border-red-200', icon: '❌' },
+                { label: 'Late', value: attendanceSummary.late, color: 'bg-orange-50 text-orange-700 border-orange-200', icon: '⏰' },
+                { label: 'Unrecorded', value: attendanceSummary.unrecorded, color: 'bg-gray-50 text-gray-500 border-gray-200', icon: '❓' },
+              ].map((card, i) => (
+                <div key={i} className={`${card.color} p-4 rounded-xl border text-center`}>
+                  <p className="text-lg mb-1">{card.icon}</p>
+                  <p className="text-2xl font-bold">{card.value}</p>
+                  <p className="text-xs font-semibold mt-1">{card.label}</p>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-2.5">
-                  <div className="bg-brand-tealCyan h-2.5 rounded-full" style={{ width: `${(cls.student_count / maxPerClass) * 100}%` }}></div>
-                </div>
+              ))}
+            </div>
+            <p className="text-sm text-center text-gray-500 mb-4">
+              Total Active Students: <strong>{attendanceSummary.total_active_students}</strong> | 
+              Recorded: <strong>{attendanceSummary.recorded}</strong> | 
+              Unrecorded: <strong>{attendanceSummary.unrecorded}</strong>
+            </p>
+            {/* Class-wise Breakdown */}
+            {attendanceSummary.class_breakdown?.length > 0 && (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm border-collapse">
+                  <thead className="bg-gray-50 text-gray-500 text-xs uppercase">
+                    <tr>
+                      <th className="p-3 font-semibold">Class</th>
+                      <th className="p-3 font-semibold text-center">Total</th>
+                      <th className="p-3 font-semibold text-center text-green-600">Present</th>
+                      <th className="p-3 font-semibold text-center text-red-600">Absent</th>
+                      <th className="p-3 font-semibold text-center text-orange-600">Late</th>
+                      <th className="p-3 font-semibold text-center">Recorded</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {attendanceSummary.class_breakdown.map((cls, i) => (
+                      <tr key={i} className="hover:bg-gray-50 border-b border-gray-100 transition-colors">
+                        <td className="p-3 font-semibold text-gray-800">{cls.class_name}</td>
+                        <td className="p-3 text-center">{cls.total_students}</td>
+                        <td className="p-3 text-center font-bold text-green-600">{cls.present}</td>
+                        <td className="p-3 text-center font-bold text-red-600">{cls.absent}</td>
+                        <td className="p-3 text-center text-orange-600">{cls.late}</td>
+                        <td className="p-3 text-center">{cls.recorded} / {cls.total_students}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
-            ))}
+            )}
           </div>
         )}
       </div>
@@ -501,30 +629,32 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      {/* Recent Teacher Presentations */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="p-6 border-b bg-[#F5F0FF]">
-          <h2 className="text-xl font-bold text-brand-deepPlum">Recent Teacher Presentations</h2>
-        </div>
-        <div className="p-4 max-h-[400px] overflow-y-auto">
-          {historyList.length === 0 ? (
-            <p className="text-center text-gray-500 py-10">No presentations found.</p>
-          ) : (
-            <div className="space-y-3">
-              {historyList.map(record => (
-                <div key={record.id} className="p-4 border rounded-xl hover:bg-gray-50">
-                  <div className="flex justify-between items-start flex-wrap gap-2">
-                    <div>
-                      <p className="font-bold text-brand-deepPlum">{record.topic_covered}</p>
-                      <p className="text-sm text-gray-500">{record.teacher_name} | {record.class_level_name} - {record.section_name} | {record.subject_name}</p>
-                    </div>
-                    <span className="text-xs bg-gray-100 px-3 py-1 rounded-full">{record.start_time.substring(0,5)} - {record.end_time.substring(0,5)}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+      {/* ========== FINANCIAL OVERVIEW GRAPH ========== */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden p-6">
+        <h2 className="text-xl font-bold text-brand-deepPlum mb-2">Financial Overview</h2>
+        <p className="text-sm text-gray-500 mb-6">Total Billed vs Collected vs Dues (in BDT)</p>
+        
+        {feeStats.billed === 0 && feeStats.collected === 0 && feeStats.due === 0 ? (
+           <p className="text-center text-gray-500 py-10">No financial data available.</p>
+        ) : (
+          <ResponsiveContainer width="100%" height={350}>
+            <BarChart data={feeChartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} />
+              <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#6b7280', fontSize: 14, fontWeight: 600}} dy={10} />
+              <YAxis axisLine={false} tickLine={false} tick={{fill: '#6b7280'}} tickFormatter={(value) => `৳${value}`} />
+              <Tooltip 
+                cursor={{fill: 'rgba(0,0,0,0.05)'}} 
+                formatter={(value) => [`৳ ${value}`, 'Amount']} 
+                contentStyle={{borderRadius: '10px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'}} 
+              />
+              <Bar dataKey="amount" radius={[8, 8, 0, 0]} maxBarSize={80}>
+                {feeChartData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={entry.fill} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        )}
       </div>
 
       {/* ========== STUDENT LIST MODAL (with class/section filters) ========== */}
@@ -572,8 +702,8 @@ export default function AdminDashboard() {
                         onClick={() => setSelectedStudentDetail(student)}
                         className="border rounded-xl p-4 hover:shadow-md cursor-pointer transition flex items-center gap-4"
                       >
-                        <div className="w-12 h-12 rounded-full bg-brand-softLavender/20 flex items-center justify-center text-xl">
-                          {student.photo ? <img src={getImageUrl(student.photo)} alt="" className="w-full h-full rounded-full object-cover" /> : '👨‍🎓'}
+                        <div className="w-12 h-12 rounded-full bg-brand-softLavender/20 flex items-center justify-center text-xl overflow-hidden">
+                          {student.photo ? <img src={getImageUrl(student.photo)} alt="" className="w-full h-full object-cover" /> : '👨‍🎓'}
                         </div>
                         <div>
                           <p className="font-bold text-brand-deepPlum">{student.name}</p>
@@ -614,7 +744,19 @@ export default function AdminDashboard() {
                   <p><strong>Address:</strong> {selectedStudentDetail.present_address}</p>
                 </div>
               </div>
-              <button onClick={() => setSelectedStudentDetail(null)} className="mt-6 w-full bg-brand-deepPlum text-white py-2 rounded-xl">Close</button>
+              
+              {/* অ্যাকশন বাটনস (Secured Print) */}
+              <div className="mt-6 flex gap-3">
+                <button onClick={() => setSelectedStudentDetail(null)} className="flex-1 bg-gray-100 text-gray-700 font-bold py-3 rounded-xl hover:bg-gray-200 transition">
+                  Close
+                </button>
+                <button 
+                  onClick={() => handlePrintIdCard(selectedStudentDetail.student_id)}
+                  className="flex-1 bg-brand-tealCyan text-brand-deepPlum font-bold py-3 rounded-xl hover:bg-[#4bc2ab] transition flex items-center justify-center gap-2 text-center"
+                >
+                  <span>🖨️ Print ID Card</span>
+                </button>
+              </div>
             </motion.div>
           </div>
         )}
@@ -638,8 +780,8 @@ export default function AdminDashboard() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {teacherList.map(teacher => (
                       <div key={teacher.id} className="border rounded-xl p-4 flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-full bg-brand-softLavender/20 flex items-center justify-center text-xl">
-                          {teacher.photo ? <img src={getImageUrl(teacher.photo)} alt="" className="w-full h-full rounded-full object-cover" /> : '👩‍🏫'}
+                        <div className="w-12 h-12 rounded-full bg-brand-softLavender/20 flex items-center justify-center text-xl overflow-hidden">
+                          {teacher.photo ? <img src={getImageUrl(teacher.photo)} alt="" className="w-full h-full object-cover" /> : '👩‍🏫'}
                         </div>
                         <div>
                           <p className="font-bold text-brand-deepPlum">{teacher.name}</p>

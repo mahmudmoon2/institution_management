@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Attendance Report - {{ date }}</title>
+    <style>
+        @page { size: A4; margin: 1cm; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; color: #1a1a1a; font-size: 11px; }
+        .header { text-align: center; border-bottom: 3px solid #1a3c6e; padding-bottom: 6px; margin-bottom: 10px; }
+        .header h1 { font-size: 18px; color: #1a3c6e; margin: 0; }
+        .header p { margin: 2px 0; color: #555; font-size: 9px; }
+        .title { text-align: center; font-size: 13px; font-weight: bold; color: #1a3c6e; margin: 10px 0; }
+        .summary { display: flex; justify-content: space-around; margin: 10px 0; padding: 8px; background: #f5f7fa; border:1px solid #ddd; font-size:9px; }
+        .summary strong { color: #1a3c6e; }
+        table { width: 100%; border-collapse: collapse; font-size: 9px; }
+        th { background: #1a3c6e; color: #fff; padding: 5px 4px; text-align: center; font-size: 8px; }
+        td { padding: 4px; border: 1px solid #ddd; text-align: left; }
+        td.center { text-align: center; }
+        .present { color: #2e7d32; font-weight: bold; }
+        .absent { color: #c62828; font-weight: bold; }
+        .late { color: #e65100; font-weight: bold; }
+        .footer { text-align: center; font-size: 8px; color: #888; margin-top: 15px; border-top: 1px solid #ddd; padding-top: 6px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>IDEAL ACADEMY</h1>
+        <p>123 School Road, Dhaka, Bangladesh</p>
+    </div>
+    <div class="title">DAILY ATTENDANCE REPORT</div>
+    <div class="summary">
+        <span><strong>Date:</strong> {{ date }}</span>
+        <span><strong>Total:</strong> {{ total }}</span>
+        <span class="present"><strong>Present:</strong> {{ present_count }}</span>
+        <span class="absent"><strong>Absent:</strong> {{ absent_count }}</span>
+        <span class="late"><strong>Late:</strong> {{ late_count }}</span>
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th>#</th><th>Roll</th><th>Name</th><th>Class</th><th>Section</th><th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for record in records %}
+            <tr>
+                <td class="center">{{ forloop.counter }}</td>
+                <td>{{ record.student.roll_number }}</td>
+                <td>{{ record.student.name }}</td>
+                <td>{{ record.student.class_level.name }}</td>
+                <td class="center">{{ record.student.section.name }}</td>
+                <td class="center">
+                    {% if record.status == 'Present' %}<span class="present">Present</span>
+                    {% elif record.status == 'Absent' %}<span class="absent">Absent</span>
+                    {% elif record.status == 'Late' %}<span class="late">Late</span>
+                    {% else %}{{ record.status }}{% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <div class="footer">Computer-generated report | Ideal Academy</div>
+</body>
+</html>

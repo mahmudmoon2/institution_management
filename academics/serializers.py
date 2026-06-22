@@ -15,3 +15,10 @@ class SubjectSerializer(serializers.ModelSerializer):
     class Meta:
         model = Subject
         fields = ['id', 'name', 'code']
+        
+from .models import Group # Group মডেল ইমপোর্ট করে নিন
+
+class GroupSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Group
+        fields = '__all__'

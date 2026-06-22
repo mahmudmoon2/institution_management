@@ -34,7 +34,6 @@
             z-index: 1;
         }
 
-        /* ডাইনামিক ওয়াটারমার্ক (Paid অথবা Due) */
         .watermark {
             position: absolute;
             top: 45%;
@@ -45,8 +44,8 @@
             z-index: -1;
             pointer-events: none;
         }
-        .watermark.paid { color: rgba(16, 185, 129, 0.05); } /* হালকা সবুজ */
-        .watermark.due { color: rgba(239, 68, 68, 0.05); } /* হালকা লাল */
+        .watermark.paid { color: rgba(16, 185, 129, 0.05); }
+        .watermark.due { color: rgba(239, 68, 68, 0.05); }
 
         @media print {
             body { background: #fff; }
@@ -110,11 +109,42 @@
         .total-row td { font-weight: 700; font-size: 13px; color: #0f172a; border-top: 2px solid #1e3a8a; }
         .summary-row td { font-size: 13px; padding-top: 5px !important; padding-bottom: 5px !important; }
 
-        .footer-section { margin-top: 50px; page-break-inside: avoid; }
-        .signatures { display: flex; justify-content: space-between; margin-bottom: 20px; }
-        .sig-box { text-align: center; width: 180px; }
-        .sig-line { border-top: 1px solid #333; margin-bottom: 6px; }
-        .sig-text { font-size: 11px; color: #64748b; font-weight: 600; }
+        /* Payment History Section */
+        .history-section {
+            background-color: #fffbeb;
+            border: 1px dashed #f59e0b;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            font-size: 11px;
+            color: #78350f;
+        }
+
+        .footer-section { margin-top: 40px; page-break-inside: avoid; }
+        
+        .seal-container {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 20px;
+            padding-right: 20px;
+        }
+        
+        .seal-box {
+            width: 110px;
+            height: 110px;
+            border: 2px dashed #cbd5e1;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            color: #94a3b8;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            line-height: 1.4;
+        }
+
         .terms { font-size: 10px; color: #64748b; border-top: 1px solid #e2e8f0; padding-top: 10px; line-height: 1.5; }
 
         .print-btn { text-align: center; margin: 15px 0; }
@@ -214,25 +244,27 @@
                 <td>৳ {{ receipt_info.total_amount|default:"0.00" }}</td>
             </tr>
             <tr class="summary-row">
-                <td colspan="3" style="text-align: right; padding-right: 20px; font-weight: bold; color: #0e5c3c;">Paid Amount:</td>
+                <td colspan="3" style="text-align: right; padding-right: 20px; font-weight: bold; color: #0e5c3c;">Total Paid Amount:</td>
                 <td style="font-weight: bold; color: #0e5c3c;">৳ {{ receipt_info.amount_paid|default:"0.00" }}</td>
             </tr>
             <tr class="summary-row">
-                <td colspan="3" style="text-align: right; padding-right: 20px; font-weight: bold; color: #ef4444;">Due Amount:</td>
+                <td colspan="3" style="text-align: right; padding-right: 20px; font-weight: bold; color: #ef4444;">Current Due Amount:</td>
                 <td style="font-weight: bold; color: #ef4444;">৳ {{ receipt_info.due_amount|default:"0.00" }}</td>
             </tr>
         </tbody>
     </table>
 
+    {% if receipt_info.notes %}
+    <div class="history-section">
+        <strong>📝 Payment History:</strong><br>
+        {{ receipt_info.notes }}
+    </div>
+    {% endif %}
+
     <div class="footer-section">
-        <div class="signatures">
-            <div class="sig-box">
-                <div class="sig-line"></div>
-                <div class="sig-text">Student / Guardian Signature</div>
-            </div>
-            <div class="sig-box">
-                <div class="sig-line"></div>
-                <div class="sig-text">Accounts Officer</div>
+        <div class="seal-container">
+            <div class="seal-box">
+                Place<br>Paid Seal<br>Here
             </div>
         </div>
 

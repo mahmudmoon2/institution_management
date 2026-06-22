@@ -18,18 +18,22 @@ export default function TeacherResults() {
   
   // মার্কস এন্ট্রির জন্য স্টেট { student_id: marks_value }
   const [marksData, setMarksData] = useState({});
+  const [existingResultsMap, setExistingResultsMap] = useState({});
+  const [results, setResults] = useState([]);
 
   useEffect(() => {
     const fetchDropdownData = async () => {
       try {
-        const [examRes, classRes, subRes] = await Promise.all([
+        const [examRes, classRes, subRes, resultRes] = await Promise.all([
           api.get('/exams/'),
           api.get('/academics/classes/'),
-          api.get('/academics/subjects/')
+          api.get('/academics/subjects/'),
+          api.get('/exams/results/')
         ]);
         setExams(examRes.data);
         setClasses(classRes.data);
         setSubjects(subRes.data);
+        setResults(resultRes.data);
       } catch (error) {
         console.error("Error fetching data:", error);
       }
@@ -47,15 +51,34 @@ export default function TeacherResults() {
 
     setIsLoading(true);
     setMsg({ type: '', text: '' });
-    setMarksData({});
-
     try {
       const res = await api.get('/students/', {
         params: { class_level: selectedClass }
       });
-      setStudents(res.data);
-      if(res.data.length === 0) {
+      const fetchedStudents = res.data;
+      setStudents(fetchedStudents);
+
+      // Auto-load existing marks
+      const filteredRes = results.filter(r => 
+        r.exam.toString() === selectedExam && 
+        r.subject.toString() === selectedSubject
+      );
+      const initialMarks = {};
+      const existMap = {};
+      filteredRes.forEach(r => {
+        if (r.marks_obtained != null) {
+          initialMarks[r.student] = r.marks_obtained;
+          existMap[r.student] = r.id;
+        }
+      });
+      setMarksData(initialMarks);
+      setExistingResultsMap(existMap);
+
+      if (fetchedStudents.length === 0) {
         setMsg({ type: 'error', text: 'No students found in this class.' });
+      } else if (Object.keys(existMap).length > 0) {
+        setMsg({ type: 'success', text: `Loaded existing marks (${Object.keys(existMap).length} students). You can edit.` });
+        setTimeout(() => setMsg({ type: '', text: '' }), 4000);
       }
     } catch (error) {
       setMsg({ type: 'error', text: 'Failed to fetch students.' });
@@ -82,20 +105,32 @@ export default function TeacherResults() {
       }
 
       for (const studentId of studentIdsWithMarks) {
-        await api.post('/exams/results/', {
-          student: studentId,
-          exam: selectedExam,
-          subject: selectedSubject,
-          marks_obtained: marksData[studentId]
-        });
+        const val = marksData[studentId];
+        const existingResultId = existingResultsMap[studentId];
+
+        if (existingResultId) {
+          await api.patch(`/exams/results/${existingResultId}/`, {
+            marks_obtained: val
+          });
+        } else {
+          await api.post('/exams/results/', {
+            student: studentId,
+            exam: selectedExam,
+            subject: selectedSubject,
+            marks_obtained: val
+          });
+        }
       }
 
-      setMsg({ type: 'success', text: `Marks successfully saved for ${studentIdsWithMarks.length} students!` });
-      setMarksData({});
+      // Refresh results
+      const updatedResultsRes = await api.get('/exams/results/');
+      setResults(updatedResultsRes.data);
+
+      setMsg({ type: 'success', text: `Marks saved/updated for ${studentIdsWithMarks.length} students!` });
       setTimeout(() => setMsg({ type: '', text: '' }), 4000);
 
     } catch (error) {
-      setMsg({ type: 'error', text: 'Failed to save marks. They might already exist.' });
+      setMsg({ type: 'error', text: 'Failed to save marks.' });
     } finally {
       setIsLoading(false);
     }

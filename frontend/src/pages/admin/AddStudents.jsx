@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import api from '../../api/axios';
 
@@ -8,10 +8,19 @@ export default function AddStudent() {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
+  // Custom Toast State
+  const [toast, setToast] = useState({ show: false, message: '', type: 'error' });
+
+  const showToast = (message, type = 'error') => {
+    setToast({ show: true, message, type });
+    setTimeout(() => setToast({ show: false, message: '', type: '' }), 3000);
+  };
+
   // Dropdown-এর জন্য ডাটাবেসের ডাটা রাখার স্টেট
   const [classes, setClasses] = useState([]);
   const [sections, setSections] = useState([]);
-  const [teachers, setTeachers] = useState([]); // গাইড টিচারের জন্য
+  const [teachers, setTeachers] = useState([]); 
+  const [groups, setGroups] = useState([]);
 
   // টেক্সট ডাটার জন্য স্টেট
   const [formData, setFormData] = useState({
@@ -28,22 +37,19 @@ export default function AddStudent() {
     guardian_nid_image: null
   });
 
-  // পেজ লোড হওয়ার সাথে সাথে ড্রপডাউনের ডাটা ফেচ করা
-// AddStudents.jsx এর ভেতরে (প্রায় ৩২ নম্বর লাইন)
-
-useEffect(() => {
+  useEffect(() => {
     const fetchDropdownData = async () => {
       try {
-        const [classRes, secRes, teachRes] = await Promise.all([
+        const [classRes, secRes, teachRes, grpRes] = await Promise.all([
           api.get('/academics/classes/'),
           api.get('/academics/sections/'),
-          
-          // আগে ছিল '/teachers/list/', এখন হবে শুধু '/teachers/'
-          api.get('/teachers/') 
+          api.get('/teachers/'),
+          api.get('/academics/groups/').catch(() => ({ data: [] })) 
         ]);
         setClasses(classRes.data);
         setSections(secRes.data);
         setTeachers(teachRes.data);
+        setGroups(grpRes.data);
       } catch (err) {
         console.error("Failed to load dropdown data.");
       }
@@ -64,34 +70,44 @@ useEffect(() => {
     setIsLoading(true);
     setErrorMsg('');
 
-    // যেহেতু ফাইল আছে, তাই FormData ব্যবহার করতে হবে
     const submitData = new FormData();
     
-    // টেক্সট ডাটাগুলো অ্যাপেন্ড করা
     Object.keys(formData).forEach(key => {
       if (formData[key]) {
         submitData.append(key, formData[key]);
       }
     });
 
-    // ফাইলগুলো অ্যাপেন্ড করা
     if (files.photo) submitData.append('photo', files.photo);
     if (files.guardian_nid_image) submitData.append('guardian_nid_image', files.guardian_nid_image);
 
     try {
-      // Content-Type 'multipart/form-data' অটোমেটিক সেট হয়ে যাবে
-      await api.post('/students/', submitData);
-      alert("Student Registered Successfully!");
-      navigate('/admin/students');
+      await api.post('/students/', submitData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      showToast("Student Registered Successfully!", "success");
+      // Toast দেখানোর জন্য ১.৫ সেকেন্ড অপেক্ষা করে তারপর রিডাইরেক্ট করবে
+      setTimeout(() => navigate('/admin/students'), 1500);
     } catch (err) {
-      console.error(err);
-      setErrorMsg("Failed to register. Please check the inputs or required fields.");
-    } finally {
+      const errorData = err.response?.data;
+      console.error("Server Validation Error:", errorData);
+      
+      showToast("Failed to register. Please check the inputs.", "error");
+
+      if (errorData && typeof errorData === 'object') {
+        const messages = Object.entries(errorData)
+          .map(([field, msg]) => `${field.toUpperCase()}: ${msg}`)
+          .join(' | ');
+        setErrorMsg(`Validation Error - ${messages}`);
+      } else {
+        setErrorMsg("Failed to register. Please check the inputs or required fields.");
+      }
       setIsLoading(false);
     }
   };
 
-  // কমন স্টাইল
   const inputClass = "w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:border-brand-tealCyan focus:ring-1 focus:ring-brand-tealCyan text-sm transition-colors bg-gray-50 focus:bg-white";
   const labelClass = "block text-sm font-semibold text-gray-700 mb-1.5";
 
@@ -100,8 +116,23 @@ useEffect(() => {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
-      className="max-w-5xl mx-auto space-y-6 pb-10"
+      className="max-w-5xl mx-auto space-y-6 pb-10 relative"
     >
+      {/* Toast Notification */}
+      <AnimatePresence>
+        {toast.show && (
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 50 }}
+            className={`fixed bottom-6 right-6 z-[100] px-6 py-3 rounded-xl shadow-lg font-bold text-white flex items-center gap-3 ${toast.type === 'error' ? 'bg-red-500' : 'bg-[#0e5c3c]'}`}
+          >
+            <span>{toast.type === 'error' ? '⚠️' : '✅'}</span>
+            <span>{toast.message}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div className="flex items-center justify-between bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
         <div>
           <h1 className="text-2xl font-bold text-brand-deepPlum">Register New Student</h1>
@@ -116,13 +147,12 @@ useEffect(() => {
       </div>
 
       {errorMsg && (
-        <div className="bg-red-50 border border-red-200 text-red-600 px-6 py-3 rounded-xl font-medium text-sm">
+        <div className="bg-red-50 border border-red-200 text-red-600 px-6 py-4 rounded-xl font-medium text-sm">
           {errorMsg}
         </div>
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        
         {/* Academic Information */}
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
           <h2 className="text-lg font-bold text-brand-royalPurple mb-4 border-b pb-2">Academic Information</h2>
@@ -145,9 +175,7 @@ useEffect(() => {
               <label className={labelClass}>Group (Optional)</label>
               <select name="group" value={formData.group} onChange={handleChange} className={inputClass}>
                 <option value="">None</option>
-                <option value="Science">Science</option>
-                <option value="Arts">Arts</option>
-                <option value="Commerce">Commerce</option>
+                {groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
               </select>
             </div>
             <div>
@@ -203,7 +231,6 @@ useEffect(() => {
                 <option value="AB+">AB+</option>
               </select>
             </div>
-            {/* Student Photo Upload */}
             <div className="md:col-span-3">
               <label className={labelClass}>Student Passport Photo (Optional)</label>
               <input type="file" name="photo" accept="image/*" onChange={handleFileChange} className={`${inputClass} !py-2`} />
@@ -235,7 +262,6 @@ useEffect(() => {
               <label className={labelClass}>Permanent Address *</label>
               <textarea name="permanent_address" required value={formData.permanent_address} rows="2" onChange={handleChange} className={inputClass}></textarea>
             </div>
-            {/* Guardian NID Upload */}
             <div className="md:col-span-2">
               <label className={labelClass}>Guardian NID Image (Mandatory)</label>
               <input type="file" name="guardian_nid_image" accept="image/*" onChange={handleFileChange} className={`${inputClass} !py-2`} />

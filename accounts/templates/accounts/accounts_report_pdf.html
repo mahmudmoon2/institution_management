@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Financial Ledger Report</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap');
+        
+        @page {
+            size: A4;
+            margin: 1.5cm 1.5cm 2cm 1.5cm;
+            @bottom-right {
+                content: "Page " counter(page) " of " counter(pages);
+                font-family: 'Roboto', sans-serif;
+                font-size: 9px;
+                color: #64748b;
+            }
+            @bottom-left {
+                content: "System Generated Document • Dhaka Ideal Academy";
+                font-family: 'Roboto', sans-serif;
+                font-size: 9px;
+                color: #64748b;
+            }
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            font-size: 11px;
+            color: #1e293b;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* --- Header Section --- */
+        .report-header {
+            width: 100%;
+            border-bottom: 2px solid #0f172a;
+            padding-bottom: 12px;
+            margin-bottom: 20px;
+            display: table;
+        }
+
+        .header-left {
+            display: table-cell;
+            vertical-align: middle;
+            width: 60%;
+        }
+
+        .header-left h1 {
+            font-size: 20px;
+            font-weight: 900;
+            color: #0f172a;
+            margin: 0 0 4px 0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .header-left p {
+            margin: 0;
+            color: #475569;
+            font-size: 10px;
+            line-height: 1.4;
+        }
+
+        .header-right {
+            display: table-cell;
+            vertical-align: bottom;
+            text-align: right;
+            width: 40%;
+        }
+
+        .header-right h2 {
+            font-size: 16px;
+            font-weight: 700;
+            color: #1e3a8a;
+            margin: 0 0 4px 0;
+            text-transform: uppercase;
+        }
+
+        .header-right .period {
+            font-size: 10px;
+            color: #334155;
+            font-weight: 700;
+            background-color: #f1f5f9;
+            padding: 4px 8px;
+            border-radius: 4px;
+            display: inline-block;
+        }
+
+        .print-date {
+            font-size: 9px;
+            color: #94a3b8;
+            margin-top: 6px;
+        }
+
+        /* --- Ledger Table --- */
+        .ledger-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        .ledger-table thead th {
+            border-top: 1px solid #0f172a;
+            border-bottom: 1px solid #0f172a;
+            color: #0f172a;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            padding: 8px 5px;
+            text-align: left;
+        }
+
+        .ledger-table tbody tr {
+            page-break-inside: avoid;
+        }
+
+        .ledger-table tbody td {
+            padding: 8px 5px;
+            border-bottom: 1px dashed #cbd5e1;
+            vertical-align: top;
+            color: #1e293b;
+        }
+
+        .ledger-table tbody tr:last-child td {
+            border-bottom: 1px solid #0f172a;
+        }
+
+        .text-right { text-align: right !important; }
+        .text-center { text-align: center !important; }
+
+        .type-income { color: #059669; font-weight: 700; font-size: 10px; text-transform: uppercase; }
+        .type-expense { color: #dc2626; font-weight: 700; font-size: 10px; text-transform: uppercase; }
+
+        .head-name { font-weight: 700; color: #0f172a; display: block; margin-bottom: 2px; }
+        .description { color: #64748b; font-size: 10px; line-height: 1.3; }
+        .ref-number { font-family: monospace; color: #94a3b8; font-size: 9px; margin-top: 2px; }
+
+        .amt-income { color: #059669; font-weight: 700; }
+        .amt-expense { color: #dc2626; font-weight: 700; }
+
+        /* --- Financial Summary (Moved to Bottom) --- */
+        .summary-wrapper {
+            width: 100%;
+            display: table;
+            margin-top: 10px;
+        }
+
+        .summary-left {
+            display: table-cell;
+            width: 60%;
+            vertical-align: top;
+        }
+
+        .summary-right {
+            display: table-cell;
+            width: 40%;
+            vertical-align: top;
+        }
+
+        .calculation-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .calculation-table td {
+            padding: 6px 5px;
+            font-size: 11px;
+            color: #334155;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .calculation-table .calc-label {
+            font-weight: 500;
+        }
+
+        .calculation-table .calc-value {
+            text-align: right;
+            font-family: monospace;
+            font-size: 12px;
+        }
+
+        .calc-income { color: #059669; font-weight: 700; }
+        .calc-expense { color: #dc2626; font-weight: 700; }
+
+        .calculation-table .grand-total td {
+            font-weight: 900;
+            color: #0f172a;
+            font-size: 13px;
+            border-top: 2px solid #0f172a;
+            border-bottom: 4px double #0f172a;
+            padding: 10px 5px;
+        }
+
+        .authorised-sign {
+            margin-top: 50px;
+            width: 150px;
+            border-top: 1px solid #0f172a;
+            text-align: center;
+            font-size: 10px;
+            font-weight: 700;
+            color: #475569;
+            padding-top: 5px;
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- Header Section -->
+    <div class="report-header">
+        <div class="header-left">
+            <h1>Dhaka Ideal Academy</h1>
+            <p>House #12, Road #4, Dhanmondi, Dhaka-1209</p>
+            <p>Phone: +880 1712-345678 | Email: info@dhakaideal.edu.bd</p>
+        </div>
+        <div class="header-right">
+            <h2>Ledger Statement</h2>
+            <div class="period">{{ start_date }} - {{ end_date }}</div>
+            <div class="print-date">Generated on: {% now "d M Y, h:i A" %}</div>
+        </div>
+    </div>
+
+    <!-- Ledger Table -->
+    <table class="ledger-table">
+        <thead>
+            <tr>
+                <th width="12%">Date</th>
+                <th width="12%">Type</th>
+                <th width="30%">Account Head & Details</th>
+                <th width="26%">Reference / Notes</th>
+                <th width="20%" class="text-right">Amount (৳)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for t in transactions %}
+            <tr>
+                <td>{{ t.date }}</td>
+                <td>
+                    {% if t.transaction_type == 'Income' %}
+                        <span class="type-income">Income</span>
+                    {% else %}
+                        <span class="type-expense">Expense</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <span class="head-name">{{ t.head_name }}</span>
+                    <div class="description">{{ t.description|default:"-" }}</div>
+                </td>
+                <td>
+                    {% if t.reference_number %}
+                        <div class="ref-number">Ref: {{ t.reference_number }}</div>
+                    {% else %}
+                        <span style="color: #cbd5e1;">-</span>
+                    {% endif %}
+                </td>
+                <td class="text-right">
+                    {% if t.transaction_type == 'Income' %}
+                        <span class="amt-income">+ {{ t.amount|floatformat:2 }}</span>
+                    {% else %}
+                        <span class="amt-expense">- {{ t.amount|floatformat:2 }}</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5" class="text-center" style="padding: 30px; color: #64748b;">
+                    No transactions found for the selected period.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- Financial Summary (Calculation at the bottom) -->
+    <div class="summary-wrapper">
+        <div class="summary-left">
+            <div class="authorised-sign">
+                Authorized Signature
+            </div>
+        </div>
+        
+        <div class="summary-right">
+            <table class="calculation-table">
+                <tr>
+                    <td class="calc-label">Total Income</td>
+                    <td class="calc-value calc-income">৳ {{ total_income|floatformat:2 }}</td>
+                </tr>
+                <tr>
+                    <td class="calc-label">Total Expense</td>
+                    <td class="calc-value calc-expense">৳ {{ total_expense|floatformat:2 }}</td>
+                </tr>
+                <tr class="grand-total">
+                    <td class="calc-label">Net Closing Balance</td>
+                    <td class="calc-value">৳ {{ net_balance|floatformat:2 }}</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+</body>
+</html>

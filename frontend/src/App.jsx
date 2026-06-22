@@ -25,6 +25,10 @@ import TeacherAttendance from './pages/admin/TeacherAttendance';
 import Teachers from './pages/admin/Teachers';
 import AddTeacher from './pages/admin/AddTeacher';
 import EditTeacher from './pages/admin/EditTeacher';
+import Staffs from './pages/admin/Staffs';
+import AddStaff from './pages/admin/AddStaff';
+import StaffSetup from './pages/admin/StaffSetup';
+import PayrollManagement from './pages/admin/PayrollManagement';
 import FeeCategories from './pages/admin/FeeCategories';
 import CollectFee from './pages/admin/CollectFee';
 import Receipt from './pages/admin/Receipt';
@@ -40,6 +44,8 @@ import ClassTests from './pages/admin/ClassTests';
 import Accounts from './pages/admin/Accounts';
 import Inventory from './pages/admin/Inventory';
 import SMSGateway from './pages/admin/SMSGateway';
+import PasswordManagement from './pages/admin/PasswordManagement';
+import AttendanceManagement from './pages/admin/AttendanceManagement';
 // NEW: AddNotice & AddEvent
 import AddNotice from './pages/admin/AddNotice';
 import AddEvent from './pages/admin/AddEvent';
@@ -97,6 +103,13 @@ function App() {
             <Route path="/admin/teachers/add" element={<AddTeacher />} />
             <Route path="/admin/teachers/edit/:id" element={<EditTeacher />} />
             <Route path="/admin/teacher-attendance" element={<TeacherAttendance />} />
+            {/* Staffs */}
+            <Route path="/admin/staffs" element={<Staffs />} />
+            <Route path="/admin/staffs/add" element={<AddStaff />} />
+            <Route path="/admin/staffs/edit/:id" element={<AddStaff />} />
+            <Route path="/admin/staff-setup" element={<StaffSetup />} />
+            {/* Payroll */}
+            <Route path="/admin/payroll" element={<PayrollManagement />} />
             {/* Fees */}
             <Route path="/admin/fee-categories" element={<FeeCategories />} />
             <Route path="/admin/collect-fee" element={<CollectFee />} />
@@ -126,6 +139,8 @@ function App() {
             <Route path="/parent/dashboard" element={<ParentDashboard />} />
             {/* Recruitment Admin */}
             <Route path="/admin/recruitment" element={<RecruitmentAdmin />} />
+            <Route path="/admin/password-management" element={<PasswordManagement />} />
+            <Route path="/admin/attendance-management" element={<AttendanceManagement />} />
           </Route>
         </Route>
       </Routes>

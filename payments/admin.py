@@ -3,21 +3,23 @@ from .models import FeeCategory, PaymentReceipt, PaymentItem, ReceiptTemplate
 
 @admin.register(FeeCategory)
 class FeeCategoryAdmin(admin.ModelAdmin):
-    list_display = ('name', 'amount', 'frequency', 'class_level')
+    list_display = ('name', 'amount', 'class_level', 'frequency')
     list_filter = ('frequency', 'class_level')
-
-# রিসিটের ভেতরেই আইটেমগুলো দেখার জন্য Inline Admin
-class PaymentItemInline(admin.TabularInline):
-    model = PaymentItem
-    extra = 0
-    readonly_fields = ('fee_category', 'amount_paid', 'month', 'year')
+    search_fields = ('name',)
 
 @admin.register(PaymentReceipt)
 class PaymentReceiptAdmin(admin.ModelAdmin):
-    list_display = ('receipt_number', 'student', 'total_amount', 'payment_date', 'method')
-    search_fields = ('receipt_number', 'student__name', 'transaction_id')
+    list_display = ('receipt_number', 'student', 'total_amount', 'amount_paid', 'due_amount', 'method', 'payment_date')
     list_filter = ('method', 'payment_date')
-    inlines = [PaymentItemInline] # রিসিটের ভেতরে আইটেম দেখাবে
-    readonly_fields = ('transaction_id', 'receipt_number')
+    search_fields = ('receipt_number', 'student__name', 'transaction_id')
+    date_hierarchy = 'payment_date'
+    readonly_fields = ('receipt_number', 'transaction_id')
 
-admin.site.register(ReceiptTemplate)
+@admin.register(PaymentItem)
+class PaymentItemAdmin(admin.ModelAdmin):
+    list_display = ('receipt', 'fee_category', 'amount_paid', 'month', 'year')
+    list_filter = ('fee_category',)
+
+@admin.register(ReceiptTemplate)
+class ReceiptTemplateAdmin(admin.ModelAdmin):
+    list_display = ('name',)

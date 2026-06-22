@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import api from '../../api/axios';
 
@@ -8,13 +8,26 @@ export default function AddTeacher() {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   
+  // Custom Toast State
+  const [toast, setToast] = useState({ show: false, message: '', type: 'error' });
+
+  const showToast = (message, type = 'error') => {
+    setToast({ show: true, message, type });
+    setTimeout(() => setToast({ show: false, message: '', type: '' }), 3000);
+  };
+
   const [subjects, setSubjects] = useState([]);
 
   // টেক্সট ডাটা
   const [formData, setFormData] = useState({
     name: '', email: '', phone: '', major_subject: '', 
     joining_date: '', gender: '', 
-    present_address: '', permanent_address: ''
+    present_address: '', permanent_address: '',
+    basic_salary: '', house_rent: '', medical_allowance: '',
+    transport_allowance: '', other_allowance: '',
+    provident_fund_pct: '', tax_pct: '',
+    bank_account_name: '', bank_account_number: '', routing_number: '',
+    bank_name: '', branch_name: '',
   });
 
   // ফাইল ডাটা
@@ -48,11 +61,10 @@ export default function AddTeacher() {
     setIsLoading(true);
     setErrorMsg('');
 
-    // FormData ব্যবহার করে ডাটা প্যাকেজ করা
     const submitData = new FormData();
     
     Object.keys(formData).forEach(key => {
-      if (formData[key]) {
+      if (formData[key] && formData[key] !== '') {
         submitData.append(key, formData[key]);
       }
     });
@@ -62,12 +74,20 @@ export default function AddTeacher() {
 
     try {
       await api.post('/teachers/', submitData);
-      alert("Teacher Registered Successfully!");
-      navigate('/admin/teachers');
+      showToast("Teacher Registered Successfully!", "success");
+      // Toast দেখানোর জন্য ১.৫ সেকেন্ড অপেক্ষা করে তারপর রিডাইরেক্ট করবে
+      setTimeout(() => navigate('/admin/teachers'), 1500);
     } catch (err) {
       console.error(err);
-      setErrorMsg(err.response?.data?.email ? "A teacher with this email already exists." : "Failed to register. Please check the inputs.");
-    } finally {
+      showToast("Failed to register teacher.", "error");
+      const errData = err.response?.data;
+      let errText = 'Unknown error';
+      if (typeof errData === 'object' && errData !== null) {
+        errText = Object.entries(errData).map(([field, msgs]) => `${field}: ${Array.isArray(msgs) ? msgs.join(', ') : msgs}`).join(' | ');
+      } else if (errData) {
+        errText = String(errData);
+      }
+      setErrorMsg(`❌ ${errText}`);
       setIsLoading(false);
     }
   };
@@ -80,8 +100,23 @@ export default function AddTeacher() {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
-      className="max-w-5xl mx-auto space-y-6 pb-10"
+      className="max-w-5xl mx-auto space-y-6 pb-10 relative"
     >
+      {/* Toast Notification */}
+      <AnimatePresence>
+        {toast.show && (
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 50 }}
+            className={`fixed bottom-6 right-6 z-[100] px-6 py-3 rounded-xl shadow-lg font-bold text-white flex items-center gap-3 ${toast.type === 'error' ? 'bg-red-500' : 'bg-[#0e5c3c]'}`}
+          >
+            <span>{toast.type === 'error' ? '⚠️' : '✅'}</span>
+            <span>{toast.message}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div className="flex items-center justify-between bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
         <div>
           <h1 className="text-2xl font-bold text-brand-deepPlum">Register New Teacher</h1>
@@ -101,7 +136,7 @@ export default function AddTeacher() {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} encType="multipart/form-data" className="space-y-6">
         
         {/* Professional Information */}
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
@@ -170,6 +205,60 @@ export default function AddTeacher() {
             <div>
               <label className={labelClass}>NID Image / Scan (Mandetory)</label>
               <input type="file" name="nid_image" accept="image/*" onChange={handleFileChange} className={`${inputClass} !py-2`} />
+            </div>
+          </div>
+        </div>
+
+        {/* Salary & Bank Information */}
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+          <h2 className="text-lg font-bold text-brand-royalPurple mb-4 border-b pb-2">Salary & Bank Information</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            <div>
+              <label className={labelClass}>Basic Salary (BDT)</label>
+              <input type="number" name="basic_salary" value={formData.basic_salary} onChange={handleChange} className={inputClass} placeholder="e.g. 35000" min="0" step="any" />
+            </div>
+            <div>
+              <label className={labelClass}>House Rent</label>
+              <input type="number" name="house_rent" value={formData.house_rent} onChange={handleChange} className={inputClass} placeholder="e.g. 12000" min="0" step="any" />
+            </div>
+            <div>
+              <label className={labelClass}>Medical Allowance</label>
+              <input type="number" name="medical_allowance" value={formData.medical_allowance} onChange={handleChange} className={inputClass} placeholder="e.g. 3000" min="0" step="any" />
+            </div>
+            <div>
+              <label className={labelClass}>Transport Allowance</label>
+              <input type="number" name="transport_allowance" value={formData.transport_allowance} onChange={handleChange} className={inputClass} placeholder="e.g. 2000" min="0" step="any" />
+            </div>
+            <div>
+              <label className={labelClass}>Other Allowance</label>
+              <input type="number" name="other_allowance" value={formData.other_allowance} onChange={handleChange} className={inputClass} placeholder="e.g. 0" min="0" step="any" />
+            </div>
+            <div></div>
+            <div>
+              <label className={labelClass}>PF Deduction (%)</label>
+              <input type="number" name="provident_fund_pct" value={formData.provident_fund_pct} onChange={handleChange} className={inputClass} placeholder="e.g. 10" min="0" max="100" step="any" />
+            </div>
+            <div>
+              <label className={labelClass}>Tax Deduction (%)</label>
+              <input type="number" name="tax_pct" value={formData.tax_pct} onChange={handleChange} className={inputClass} placeholder="e.g. 5" min="0" max="100" step="any" />
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-4 pt-4 border-t border-gray-100">
+            <div>
+              <label className={labelClass}>Bank Account Name</label>
+              <input type="text" name="bank_account_name" value={formData.bank_account_name} onChange={handleChange} className={inputClass} placeholder="As per bank records" />
+            </div>
+            <div>
+              <label className={labelClass}>Bank Account Number</label>
+              <input type="text" name="bank_account_number" value={formData.bank_account_number} onChange={handleChange} className={inputClass} placeholder="e.g. 1234567890" />
+            </div>
+            <div>
+              <label className={labelClass}>Routing Number</label>
+              <input type="text" name="routing_number" value={formData.routing_number} onChange={handleChange} className={inputClass} placeholder="e.g. ABC123" />
+            </div>
+            <div>
+              <label className={labelClass}>Bank Name</label>
+              <input type="text" name="bank_name" value={formData.bank_name} onChange={handleChange} className={inputClass} placeholder="e.g. Dutch Bangla Bank" />
             </div>
           </div>
         </div>

@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Academic Marksheet</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap');
+        
+        @page {
+            size: A4 portrait;
+            margin: 1.5cm;
+            @bottom-left {
+                content: "System Generated Document • Dhaka Ideal Academy";
+                font-family: 'Roboto', sans-serif;
+                font-size: 9px;
+                color: #64748b;
+            }
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            font-size: 12px;
+            color: #1e293b;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* --- Header --- */
+        .header {
+            text-align: center;
+            border-bottom: 2px solid #1e3a8a;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+
+        .school-name { font-size: 26px; font-weight: 900; color: #1e3a8a; margin: 0 0 5px 0; text-transform: uppercase; }
+        .school-address { color: #475569; font-size: 12px; margin: 0 0 10px 0; }
+        .report-title { font-size: 18px; font-weight: 700; color: #0f172a; margin: 0; text-transform: uppercase; letter-spacing: 2px; }
+
+        /* --- Student Info Box --- */
+        .info-box {
+            width: 100%;
+            border: 1px solid #1e3a8a;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            background-color: #f8fafc;
+        }
+
+        .info-table { width: 100%; }
+        .info-table td { padding: 4px 0; font-size: 12px; }
+        .info-label { font-weight: 700; color: #475569; width: 120px; }
+        .info-value { font-weight: 700; color: #0f172a; }
+
+        /* --- Marks Table --- */
+        .marks-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        .marks-table th {
+            background-color: #1e3a8a;
+            color: #ffffff;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            padding: 10px 8px;
+            border: 1px solid #0f172a;
+            text-align: center;
+        }
+
+        .marks-table td {
+            padding: 10px 8px;
+            border: 1px solid #cbd5e1;
+            text-align: center;
+            color: #1e293b;
+        }
+
+        .text-left { text-align: left !important; }
+        
+        .marks-table tr:nth-child(even) { background-color: #f1f5f9; }
+        .subject-name { font-weight: 700; }
+        
+        .fail-mark { color: #dc2626; font-weight: 700; }
+
+        /* --- Final Result Summary --- */
+        .summary-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 40px;
+        }
+        .summary-table td {
+            width: 33.33%;
+            padding: 15px;
+            text-align: center;
+            border: 1px solid #cbd5e1;
+            background-color: #f8fafc;
+        }
+        .summary-title { font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 5px; }
+        .summary-value { font-size: 20px; font-weight: 900; color: #1e3a8a; }
+
+        /* --- Signatures --- */
+        .signature-table {
+            width: 100%;
+            border: none;
+            margin-top: 60px;
+            page-break-inside: avoid;
+        }
+        .signature-table td {
+            border: none;
+            text-align: center;
+            vertical-align: bottom;
+            padding: 0;
+            width: 33.33%;
+        }
+        .sig-line {
+            display: inline-block;
+            border-top: 1px solid #0f172a;
+            padding-top: 5px;
+            width: 160px;
+            font-size: 12px;
+            font-weight: 700;
+            color: #334155;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1 class="school-name">Dhaka Ideal Academy</h1>
+        <p class="school-address">House #12, Road #4, Dhanmondi, Dhaka-1209</p>
+        <h2 class="report-title">Academic Marksheet</h2>
+    </div>
+
+    <div class="info-box">
+        <table class="info-table">
+            <tr>
+                <td class="info-label">Student Name:</td>
+                <td class="info-value" colspan="3">{{ student.name }}</td>
+            </tr>
+            <tr>
+                <td class="info-label">Student ID:</td>
+                <td class="info-value">{{ student.student_id }}</td>
+                <td class="info-label">Examination:</td>
+                <td class="info-value">{{ exam.name }} ({{ exam.academic_year }})</td>
+            </tr>
+            <tr>
+                <td class="info-label">Class & Section:</td>
+                <td class="info-value">{{ student.class_level.name }} - {{ student.section.name }}</td>
+                <td class="info-label">Roll Number:</td>
+                <td class="info-value">{{ student.roll_number }}</td>
+            </tr>
+        </table>
+    </div>
+
+    <table class="marks-table">
+        <thead>
+            <tr>
+                <th class="text-left" width="35%">Subjects</th>
+                <th width="15%">Full Marks</th>
+                <th width="15%">Pass Marks</th>
+                <th width="15%">Marks Obtained</th>
+                <th width="10%">Letter Grade</th>
+                <th width="10%">Grade Point</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in marks_data %}
+            <tr>
+                <td class="text-left subject-name">{{ item.subject }}</td>
+                <td>{{ item.full_marks|floatformat:0 }}</td>
+                <td>{{ item.pass_marks|floatformat:0 }}</td>
+                <td style="font-weight: 700;">{{ item.obtained }}</td>
+                <td class="{% if item.grade == 'F' %}fail-mark{% endif %}"><strong>{{ item.grade }}</strong></td>
+                <td class="{% if item.grade == 'F' %}fail-mark{% endif %}"><strong>{{ item.gpa }}</strong></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <table class="summary-table">
+        <tr>
+            <td>
+                <div class="summary-title">Total Marks</div>
+                <div class="summary-value">{{ total_marks }}</div>
+            </td>
+            <td>
+                <div class="summary-title">GPA</div>
+                <div class="summary-value" style="color: #059669;">{{ gpa }}</div>
+            </td>
+            <td>
+                <div class="summary-title">Final Grade</div>
+                <div class="summary-value {% if grade == 'F' or grade == 'Incomplete' %}fail-mark{% endif %}">{{ grade }}</div>
+            </td>
+        </tr>
+    </table>
+
+    <table class="signature-table">
+        <tr>
+            <td><span class="sig-line">Class Teacher</span></td>
+            <td><span class="sig-line">Exam Controller</span></td>
+            <td><span class="sig-line">Principal</span></td>
+        </tr>
+    </table>
+
+</body>
+</html>

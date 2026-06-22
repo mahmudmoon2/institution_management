@@ -8,6 +8,9 @@ export default function SubjectExams() {
   const [subjectExams, setSubjectExams] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [msg, setMsg] = useState({ type: '', text: '' });
+  
+  // State for Print Routine Dropdown
+  const [printExamId, setPrintExamId] = useState('');
 
   const [formData, setFormData] = useState({
     exam: '',
@@ -50,7 +53,6 @@ export default function SubjectExams() {
       await api.post('/exams/subject-exams/', formData);
       setMsg({ type: 'success', text: 'Subject routine added successfully!' });
       
-      // ফর্ম রিসেট করা (শুধু সাবজেক্ট, ডেট, টাইম রিসেট হবে, এক্সাম সেম থাকবে সুবিধার জন্য)
       setFormData({
         ...formData, subject: '', exam_date: '', exam_time: ''
       });
@@ -73,14 +75,47 @@ export default function SubjectExams() {
     }
   };
 
+  // --- NEW: Print Routine Logic ---
+  const handlePrintRoutine = async () => {
+    try {
+      const url = printExamId ? `/exams/routine/pdf/?exam_id=${printExamId}` : '/exams/routine/pdf/';
+      const response = await api.get(url, { responseType: 'blob' });
+      const fileURL = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+      window.open(fileURL, '_blank');
+    } catch (error) {
+      console.error("Failed to generate PDF", error);
+      alert("Failed to generate routine PDF.");
+    }
+  };
+
   const inputClass = "w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:border-brand-tealCyan text-sm bg-gray-50 focus:bg-white transition-colors";
   const labelClass = "block text-sm font-semibold text-gray-700 mb-1.5";
 
   return (
     <div className="space-y-6 pb-10">
-      <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-        <h1 className="text-2xl font-bold text-brand-deepPlum">Exam Routine Setup</h1>
-        <p className="text-gray-500 text-sm mt-1">Assign subjects, marks, dates, and times to specific exams.</p>
+      <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-brand-deepPlum">Exam Routine Setup</h1>
+          <p className="text-gray-500 text-sm mt-1">Assign subjects, marks, dates, and times to specific exams.</p>
+        </div>
+        
+        {/* --- NEW: Print Routine Section --- */}
+        <div className="flex gap-2 w-full md:w-auto">
+          <select 
+            value={printExamId} 
+            onChange={(e) => setPrintExamId(e.target.value)}
+            className="px-3 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-brand-tealCyan bg-gray-50"
+          >
+            <option value="">All Routines</option>
+            {exams.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
+          </select>
+          <button 
+            onClick={handlePrintRoutine}
+            className="px-4 py-2 bg-brand-royalPurple hover:bg-brand-deepPlum text-white rounded-xl font-bold transition-colors shadow-sm flex items-center gap-2 text-sm"
+          >
+            <span>🖨️</span> Print Routine
+          </button>
+        </div>
       </motion.div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

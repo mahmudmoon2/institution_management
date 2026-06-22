@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import api from '../../api/axios';
 import { getImageUrl } from '../../utils/imageHelper';
+import { ToggleLeft, ToggleRight, IdCard, FileText } from 'lucide-react';
 
 export default function Teachers() {
   const [teachers, setTeachers] = useState([]);
@@ -13,17 +14,18 @@ export default function Teachers() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [teacherToDelete, setTeacherToDelete] = useState(null);
 
+  const fetchTeachers = async () => {
+    try {
+      const response = await api.get('/teachers/');
+      setTeachers(response.data);
+    } catch (error) {
+      console.error("Failed to fetch teachers", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchTeachers = async () => {
-      try {
-        const response = await api.get('/teachers/');
-        setTeachers(response.data);
-      } catch (error) {
-        console.error("Failed to fetch teachers", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
     fetchTeachers();
   }, []);
 
@@ -48,6 +50,43 @@ export default function Teachers() {
     } catch (error) {
       console.error("Error deleting teacher", error);
       alert("Failed to delete teacher. Please try again.");
+    }
+  };
+
+  const handleToggleActive = async (teacher, e) => {
+    e.stopPropagation();
+    try {
+      const res = await api.patch(`/teachers/${teacher.id}/`, {
+        is_active: !teacher.is_active,
+      });
+      setTeachers(teachers.map(t => t.id === teacher.id ? { ...t, is_active: res.data.is_active } : t));
+    } catch (error) {
+      console.error("Error toggling status", error);
+      alert("Failed to toggle teacher status.");
+    }
+  };
+
+  const handleIdCard = async (teacher, e) => {
+    e.stopPropagation();
+    try {
+      const res = await api.get(`/teachers/id-card/${teacher.id}/pdf/`, { responseType: 'blob' });
+      const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
+      window.open(url, '_blank');
+    } catch (error) {
+      console.error("Error generating ID card", error);
+      alert("Failed to generate ID card.");
+    }
+  };
+
+  const handleAppointmentLetter = async (teacher, e) => {
+    e.stopPropagation();
+    try {
+      const res = await api.get(`/teachers/appointment-letter/${teacher.id}/pdf/`, { responseType: 'blob' });
+      const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
+      window.open(url, '_blank');
+    } catch (error) {
+      console.error("Error generating appointment letter", error);
+      alert("Failed to generate appointment letter.");
     }
   };
 
@@ -104,7 +143,7 @@ export default function Teachers() {
                   <th className="py-4 px-6 font-semibold">Name</th>
                   <th className="py-4 px-6 font-semibold">Subject</th>
                   <th className="py-4 px-6 font-semibold">Phone</th>
-                  <th className="py-4 px-6 font-semibold">Status</th>
+                  <th className="py-4 px-6 font-semibold text-center">Status</th>
                   <th className="py-4 px-6 font-semibold text-right">Actions</th>
                 </tr>
               </thead>
@@ -124,12 +163,38 @@ export default function Teachers() {
                       <td className="py-4 px-6 text-sm font-semibold text-brand-deepPlum">{teacher.name}</td>
                       <td className="py-4 px-6 text-sm text-gray-600">{teacher.major_subject_name || 'N/A'}</td>
                       <td className="py-4 px-6 text-sm text-gray-600">{teacher.phone}</td>
-                      <td className="py-4 px-6 text-sm">
-                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${teacher.is_active ? 'bg-brand-mintGreen/30 text-[#0e5c3c]' : 'bg-red-50 text-red-600'}`}>
-                          {teacher.is_active ? 'Active' : 'Inactive'}
-                        </span>
+                      <td className="py-4 px-6 text-center" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          onClick={(e) => handleToggleActive(teacher, e)}
+                          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold transition-colors ${
+                            teacher.is_active
+                              ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                              : 'bg-red-100 text-red-600 hover:bg-red-200'
+                          }`}
+                          title={teacher.is_active ? 'Click to Deactivate' : 'Click to Activate'}
+                        >
+                          {teacher.is_active ? (
+                            <><ToggleRight className="w-3.5 h-3.5" /> Active</>
+                          ) : (
+                            <><ToggleLeft className="w-3.5 h-3.5" /> Inactive</>
+                          )}
+                        </button>
                       </td>
-                      <td className="py-4 px-6 text-right space-x-2" onClick={(e) => e.stopPropagation()}>
+                      <td className="py-4 px-6 text-right space-x-1" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          onClick={(e) => handleIdCard(teacher, e)}
+                          className="text-gray-400 hover:text-brand-royalPurple transition-colors p-2 inline-block"
+                          title="Generate ID Card"
+                        >
+                          <IdCard className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={(e) => handleAppointmentLetter(teacher, e)}
+                          className="text-gray-400 hover:text-blue-500 transition-colors p-2 inline-block"
+                          title="Print Appointment Letter"
+                        >
+                          <FileText className="w-4 h-4" />
+                        </button>
                         <Link
                           to={`/admin/teachers/edit/${teacher.id}`}
                           className="text-gray-400 hover:text-brand-tealCyan transition-colors p-2 inline-block"
@@ -191,17 +256,42 @@ export default function Teachers() {
                     <div><span className="font-semibold text-gray-700">Joining Date:</span> <span className="text-gray-900">{selectedTeacher.joining_date}</span></div>
                     <div><span className="font-semibold text-gray-700">Gender:</span> <span className="text-gray-900">{selectedTeacher.gender}</span></div>
                     <div><span className="font-semibold text-gray-700">Status:</span>
-                      <span className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${selectedTeacher.is_active ? 'bg-brand-mintGreen/30 text-[#0e5c3c]' : 'bg-red-50 text-red-600'}`}>
-                        {selectedTeacher.is_active ? 'Active' : 'Inactive'}
-                      </span>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleToggleActive(selectedTeacher, e).then(() => {
+                            setSelectedTeacher(prev => prev ? { ...prev, is_active: !prev.is_active } : null);
+                          });
+                        }}
+                        className={`ml-2 inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold transition-colors ${
+                          selectedTeacher.is_active
+                            ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                            : 'bg-red-100 text-red-600 hover:bg-red-200'
+                        }`}
+                      >
+                        {selectedTeacher.is_active ? <><ToggleRight className="w-3 h-3" /> Active</> : <><ToggleLeft className="w-3 h-3" /> Inactive</>}
+                      </button>
                     </div>
                     <div className="md:col-span-2"><span className="font-semibold text-gray-700">Present Address:</span> <span className="text-gray-900">{selectedTeacher.present_address}</span></div>
                     <div className="md:col-span-2"><span className="font-semibold text-gray-700">Permanent Address:</span> <span className="text-gray-900">{selectedTeacher.permanent_address}</span></div>
-                    {selectedTeacher.salary_grade && <div><span className="font-semibold text-gray-700">Salary Grade:</span> <span className="text-gray-900">{selectedTeacher.salary_grade}</span></div>}
                   </div>
                 </div>
               </div>
-              <div className="sticky bottom-0 bg-gray-50 p-4 text-right border-t">
+              <div className="sticky bottom-0 bg-gray-50 p-4 text-right border-t flex justify-between items-center">
+                <div className="flex gap-2">
+                  <button
+                    onClick={(e) => handleIdCard(selectedTeacher, e)}
+                    className="px-4 py-2 bg-brand-royalPurple text-white rounded-xl hover:bg-brand-deepPlum transition flex items-center gap-2"
+                  >
+                    <IdCard className="w-4 h-4" /> Generate ID Card
+                  </button>
+                  <button
+                    onClick={(e) => handleAppointmentLetter(selectedTeacher, e)}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition flex items-center gap-2"
+                  >
+                    <FileText className="w-4 h-4" /> Appointment Letter
+                  </button>
+                </div>
                 <button onClick={closeDetailModal} className="px-6 py-2 bg-brand-deepPlum text-white rounded-xl hover:bg-brand-royalPurple transition">Close</button>
               </div>
             </motion.div>
@@ -209,7 +299,7 @@ export default function Teachers() {
         )}
       </AnimatePresence>
 
-      {/* Delete Confirmation Modal (unchanged) */}
+      {/* Delete Confirmation Modal */}
       <AnimatePresence>
         {isDeleteModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-4">

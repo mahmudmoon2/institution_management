@@ -8,6 +8,7 @@ export default function DashboardLayout() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [userName, setUserName] = useState('');
+  const [displayRole, setDisplayRole] = useState('');
   const { userRole, logout } = useAuthStore();
   const location = useLocation();
   const navigate = useNavigate();
@@ -17,13 +18,12 @@ export default function DashboardLayout() {
       try {
         const res = await api.get('/me/');
         setUserName(res.data.name);
+        setDisplayRole(res.data.role || userRole);
       } catch (error) {
         console.error("Failed to fetch user info", error);
-        if (userRole === 'ADMIN') setUserName('System Admin');
-        else if (userRole === 'TEACHER') setUserName('Teacher Profile');
-        else if (userRole === 'STUDENT') setUserName('Student Profile');
-        else if (userRole === 'PARENT') setUserName('Parent Profile');
-        else setUserName('User Profile');
+        const roleLabels = { ADMIN: 'Admin', TEACHER: 'Teacher', STUDENT: 'Student', PARENT: 'Parent' };
+        setUserName(roleLabels[userRole] || 'User');
+        setDisplayRole(roleLabels[userRole] || 'User');
       }
     };
     fetchUser();
@@ -45,7 +45,15 @@ export default function DashboardLayout() {
       items: [
         { name: 'Students', path: '/admin/students', icon: '👨‍🎓' },
         { name: 'Teachers', path: '/admin/teachers', icon: '👩‍🏫' },
+        { name: 'Staffs', path: '/admin/staffs', icon: '👔' },
+        { name: 'Staff Setup', path: '/admin/staff-setup', icon: '⚙️' },
         { name: 'Teacher Attendance', path: '/admin/teacher-attendance', icon: '✅' },
+      ],
+    },
+    {
+      name: 'HR & Payroll',
+      items: [
+        { name: 'Payroll', path: '/admin/payroll', icon: '💵' },
       ],
     },
     {
@@ -72,6 +80,18 @@ export default function DashboardLayout() {
     {
       name: 'Communication',
       items: [{ name: 'SMS Gateway', path: '/admin/sms-gateway', icon: '💬' }],
+    },
+    {
+      name: 'Attendance',
+      items: [
+        { name: 'Attendance Mgmt', path: '/admin/attendance-management', icon: '📋' },
+      ],
+    },
+    {
+      name: 'Security',
+      items: [
+        { name: 'Password Mgmt', path: '/admin/password-management', icon: '🔐' },
+      ],
     },
     {
       name: 'Operations',
@@ -219,7 +239,7 @@ export default function DashboardLayout() {
         <div className="flex items-center gap-2">
           <div className="text-right">
             <p className="text-xs text-gray-700">{userName}</p>
-            <p className="text-[10px] text-gray-400">{userRole}</p>
+            <p className="text-[10px] text-gray-400">{displayRole}</p>
           </div>
           <button onClick={handleLogout} className="p-1 rounded-lg hover:bg-red-50">
             <LogOut className="w-4 h-4 text-red-500" />
@@ -317,7 +337,7 @@ export default function DashboardLayout() {
             <div className="flex items-center gap-3">
               <div className="text-right">
                 <p className="text-xs font-medium text-gray-700">{userName}</p>
-                <p className="text-[10px] text-gray-400">{userRole}</p>
+                <p className="text-[10px] text-gray-400">{displayRole}</p>
               </div>
               <button
                 onClick={handleLogout}

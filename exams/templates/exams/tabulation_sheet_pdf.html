@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Tabulation Sheet - {{ exam.name }}</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap');
+        
+        @page {
+            size: A4 landscape; /* Result sheet requires wide layout */
+            margin: 1.5cm;
+            @bottom-right {
+                content: "Page " counter(page) " of " counter(pages);
+                font-family: 'Roboto', sans-serif;
+                font-size: 9px;
+                color: #64748b;
+            }
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            font-size: 10px;
+            color: #0f172a;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* --- Header Section --- */
+        .report-header {
+            text-align: center;
+            border-bottom: 2px solid #1e3a8a;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+
+        .school-name {
+            font-size: 24px;
+            font-weight: 900;
+            color: #1e3a8a;
+            margin: 0 0 5px 0;
+            text-transform: uppercase;
+        }
+
+        .report-title {
+            font-size: 16px;
+            font-weight: 700;
+            margin: 0 0 5px 0;
+            text-transform: uppercase;
+        }
+
+        .exam-info {
+            font-size: 12px;
+            font-weight: 500;
+            color: #475569;
+        }
+
+        /* --- Tabulation Table --- */
+        .tabulation-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .tabulation-table thead th {
+            background-color: #1e3a8a;
+            color: #ffffff;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            padding: 8px 5px;
+            border: 1px solid #0f172a;
+            vertical-align: middle;
+            text-align: center;
+        }
+
+        .tabulation-table tbody tr {
+            page-break-inside: avoid;
+        }
+
+        .tabulation-table tbody tr:nth-child(even) {
+            background-color: #f8fafc;
+        }
+
+        .tabulation-table tbody td {
+            padding: 6px 5px;
+            border: 1px solid #cbd5e1;
+            text-align: center;
+            vertical-align: middle;
+            color: #1e293b;
+        }
+
+        .text-left { text-align: left !important; }
+        
+        .student-name { font-weight: 700; font-size: 11px; }
+        .student-meta { font-size: 9px; color: #64748b; }
+
+        .marks-val { font-weight: 700; font-size: 11px; }
+        .grade-val { font-size: 9px; color: #059669; font-weight: 700; display: block; }
+        
+        .final-cols td {
+            background-color: #f1f5f9;
+            font-weight: 700;
+        }
+
+        .grade-fail { color: #dc2626 !important; }
+
+        /* --- Footer Signatures --- */
+        .signature-table {
+            width: 100%;
+            border: none;
+            margin-top: 50px;
+            page-break-inside: avoid;
+        }
+        .signature-table td {
+            border: none;
+            text-align: center;
+            vertical-align: bottom;
+            padding: 0;
+            width: 33.33%;
+        }
+        .sig-line {
+            display: inline-block;
+            border-top: 1px solid #0f172a;
+            padding-top: 5px;
+            width: 150px;
+            font-size: 11px;
+            font-weight: 700;
+            color: #334155;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="report-header">
+        <h1 class="school-name">Dhaka Ideal Academy</h1>
+        <h2 class="report-title">Official Tabulation Sheet</h2>
+        <div class="exam-info">
+            {{ exam.name }} - {{ exam.class_level.name }} | Academic Year: {{ exam.academic_year }}
+        </div>
+    </div>
+
+    <table class="tabulation-table">
+        <thead>
+            <tr>
+                <th class="text-left" width="20%">Student Details</th>
+                {% for sub in subject_exams %}
+                    <th>
+                        {{ sub.subject.name }}<br>
+                        <span style="font-size: 8px; font-weight: 400;">Full: {{ sub.full_marks|floatformat:0 }}</span>
+                    </th>
+                {% endfor %}
+                <th width="8%" style="background-color: #0f172a;">Total</th>
+                <th width="8%" style="background-color: #0f172a;">GPA</th>
+                <th width="8%" style="background-color: #0f172a;">Grade</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in tabulation_data %}
+            <tr>
+                <td class="text-left">
+                    <div class="student-name">{{ row.student.name }}</div>
+                    <div class="student-meta">ID: {{ row.student.student_id }} | Roll: {{ row.student.roll_number }}</div>
+                </td>
+                
+                {% for mark in row.marks_data %}
+                    <td>
+                        <span class="marks-val">{{ mark.marks }}</span>
+                        {% if mark.grade != '-' %}
+                            <span class="grade-val {% if mark.grade == 'F' %}grade-fail{% endif %}">{{ mark.grade }}</span>
+                        {% endif %}
+                    </td>
+                {% endfor %}
+
+                <td style="background-color: #f1f5f9; font-weight: 700;">{{ row.total_marks }}</td>
+                <td style="background-color: #f1f5f9; font-weight: 700; color: #059669;">{{ row.gpa }}</td>
+                <td style="background-color: #f1f5f9; font-weight: 700;">
+                    <span class="{% if row.grade == 'F' or row.grade == 'Incomplete' %}grade-fail{% else %}grade-val{% endif %}">
+                        {{ row.grade }}
+                    </span>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="{{ subject_exams|length|add:4 }}" class="text-center" style="padding: 30px;">
+                    No results found for this examination.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <table class="signature-table">
+        <tr>
+            <td><span class="sig-line">Prepared By</span></td>
+            <td><span class="sig-line">Exam Controller</span></td>
+            <td><span class="sig-line">Principal</span></td>
+        </tr>
+    </table>
+
+</body>
+</html>

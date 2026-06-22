@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Appointment Letter - {{ teacher.name }}</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 1.5cm;
+        }
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            color: #1a1a1a;
+            line-height: 1.6;
+            font-size: 13px;
+        }
+        .letterhead {
+            text-align: center;
+            border-bottom: 3px solid #1a3c6e;
+            padding-bottom: 15px;
+            margin-bottom: 25px;
+        }
+        .letterhead h1 {
+            font-size: 24px;
+            color: #1a3c6e;
+            margin: 0 0 5px 0;
+            letter-spacing: 1px;
+        }
+        .letterhead p {
+            margin: 2px 0;
+            color: #555;
+            font-size: 12px;
+        }
+        .ref-date {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            font-size: 12px;
+            color: #555;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 10px;
+        }
+        .subject {
+            font-size: 15px;
+            font-weight: bold;
+            color: #1a3c6e;
+            text-align: center;
+            margin: 20px 0;
+            text-transform: uppercase;
+            text-decoration: underline;
+        }
+        .content {
+            text-align: justify;
+            margin-bottom: 20px;
+        }
+        .content p {
+            margin: 8px 0;
+        }
+        .details-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 13px;
+        }
+        .details-table td {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+        }
+        .details-table td:first-child {
+            background-color: #f5f7fa;
+            font-weight: bold;
+            width: 35%;
+            color: #1a3c6e;
+        }
+        .terms {
+            margin: 25px 0;
+        }
+        .terms h3 {
+            color: #1a3c6e;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+        .terms ul {
+            padding-left: 20px;
+        }
+        .terms li {
+            margin-bottom: 5px;
+        }
+        .signature-section {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 50px;
+            padding-top: 30px;
+        }
+        .signature-section div {
+            text-align: center;
+        }
+        .signature-section .line {
+            width: 200px;
+            border-top: 1px solid #333;
+            margin-top: 40px;
+        }
+        .signature-section .label {
+            font-size: 12px;
+            color: #555;
+        }
+        .footer {
+            text-align: center;
+            font-size: 11px;
+            color: #888;
+            margin-top: 30px;
+            border-top: 1px solid #ddd;
+            padding-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="letterhead">
+        <h1>IDEAL ACADEMY</h1>
+        <p>123 School Road, Dhaka, Bangladesh | Phone: +880-2-XXXXXXX</p>
+        <p>Email: info@idealacademy.edu | Website: www.idealacademy.edu</p>
+    </div>
+
+    <div class="ref-date">
+        <span>Ref: IA/HR/{{ teacher.teacher_id }}/{{ date|date:"Y" }}</span>
+        <span>Date: {{ date|date:"d F, Y" }}</span>
+    </div>
+
+    <div class="subject">APPOINTMENT LETTER</div>
+
+    <div class="content">
+        <p>Dear <strong>{{ teacher.name }}</strong>,</p>
+
+        <p>With reference to your application and subsequent interview, we are pleased to appoint you as a faculty member at <strong>Ideal Academy</strong>. The terms and conditions of your appointment are as follows:</p>
+    </div>
+
+    <table class="details-table">
+        <tr>
+            <td>Teacher ID</td>
+            <td>{{ teacher.teacher_id }}</td>
+        </tr>
+        <tr>
+            <td>Full Name</td>
+            <td>{{ teacher.name }}</td>
+        </tr>
+        <tr>
+            <td>Designation</td>
+            <td>Teacher - {{ teacher.major_subject.name|default:"General" }}</td>
+        </tr>
+        <tr>
+            <td>Date of Joining</td>
+            <td>{{ teacher.joining_date|date:"d F, Y" }}</td>
+        </tr>
+        <tr>
+            <td>Contact Number</td>
+            <td>{{ teacher.phone }}</td>
+        </tr>
+        <tr>
+            <td>Email</td>
+            <td>{{ teacher.email }}</td>
+        </tr>
+    </table>
+
+    <div class="terms">
+        <h3>Terms & Conditions:</h3>
+        <ul>
+            <li>Your appointment is subject to the rules and regulations of Ideal Academy as may be amended from time to time.</li>
+            <li>You will undergo a probation period of <strong>6 (six) months</strong> from the date of joining. During or at the end of the probation period, your service may be terminated with one month's notice.</li>
+            <li>After successful completion of the probation period, your service will be confirmed in writing.</li>
+            <li>You are entitled to annual leave, sick leave, and other benefits as per the school's HR policy.</li>
+            <li>You must maintain strict confidentiality regarding all school matters, student records, and internal affairs.</li>
+            <li>You are required to abide by the code of conduct, dress code, and working hours as prescribed by the institution.</li>
+            <li>Either party may terminate this contract by giving <strong>one month's written notice</strong> or salary in lieu thereof.</li>
+        </ul>
+    </div>
+
+    <div class="content">
+        <p>We look forward to a long and mutually beneficial association with you. Please sign and return the duplicate copy of this letter as a token of your acceptance of the offer.</p>
+    </div>
+
+    <div class="signature-section">
+        <div>
+            <div>__________________________</div>
+            <div class="label" style="margin-top:5px;">Accepted by</div>
+            <div class="label">{{ teacher.name }}</div>
+        </div>
+        <div>
+            <div>__________________________</div>
+            <div class="label" style="margin-top:5px;">For Ideal Academy</div>
+            <div class="label">Principal / Head of HR</div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>This is a computer-generated document. | Ideal Academy, Dhaka, Bangladesh</p>
+    </div>
+
+</body>
+</html>

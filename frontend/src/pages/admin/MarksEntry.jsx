@@ -1,21 +1,31 @@
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import api from '../../api/axios';
 
 export default function MarksEntry() {
   const [exams, setExams] = useState([]);
   const [subjectExams, setSubjectExams] = useState([]);
   const [students, setStudents] = useState([]);
+  const [results, setResults] = useState([]); // নতুন স্টেট: ডাটাবেসের রেজাল্ট রাখার জন্য
   
   const [isLoading, setIsLoading] = useState(false);
-  const [msg, setMsg] = useState({ type: '', text: '' });
+  
+  // Custom Toast State (বিরক্তিকর Alert এর বদলে)
+  const [toast, setToast] = useState({ show: false, message: '', type: 'error' });
 
   // সিলেকশন স্টেট
   const [selectedExamId, setSelectedExamId] = useState('');
   const [selectedSubjectExamId, setSelectedSubjectExamId] = useState('');
   
-  // মার্কস এন্ট্রির জন্য স্টেট { student_id: marks_value }
+  // মার্কস এন্ট্রির জন্য স্টেট 
   const [marksData, setMarksData] = useState({});
+  // কোন স্টুডেন্টের রেজাল্ট আগে থেকেই আছে তার ট্র্যাকিং ম্যাপ { student_id: result_id }
+  const [existingResultsMap, setExistingResultsMap] = useState({});
+
+  const showToast = (message, type = 'success') => {
+    setToast({ show: true, message, type });
+    setTimeout(() => setToast({ show: false, message: '', type: '' }), 4000);
+  };
 
   useEffect(() => {
     fetchInitialData();
@@ -23,28 +33,54 @@ export default function MarksEntry() {
 
   const fetchInitialData = async () => {
     try {
-      const [examRes, subExamRes, stuRes] = await Promise.all([
+      const [examRes, subExamRes, stuRes, resultRes] = await Promise.all([
         api.get('/exams/'),
         api.get('/exams/subject-exams/'),
-        api.get('/students/')
+        api.get('/students/'),
+        api.get('/exams/results/') // রেজাল্টগুলোও নিয়ে আসলাম
       ]);
       setExams(examRes.data);
       setSubjectExams(subExamRes.data);
       setStudents(stuRes.data);
+      setResults(resultRes.data);
     } catch (error) {
       console.error("Error fetching data:", error);
+      showToast("Failed to fetch initial data.", "error");
     }
   };
 
-  // নির্বাচিত পরীক্ষার উপর ভিত্তি করে সাবজেক্ট ফিল্টার করা
+  // যখন এক্সাম বা সাবজেক্ট চেঞ্জ হবে, তখন আগের মার্কসগুলো ইনপুট বক্সে বসিয়ে দেওয়া হবে
+  useEffect(() => {
+    if (selectedExamId && selectedSubjectExamId) {
+      const selectedSubExam = subjectExams.find(se => se.id.toString() === selectedSubjectExamId);
+      if (selectedSubExam) {
+        const filteredRes = results.filter(r => 
+          r.exam.toString() === selectedExamId && 
+          r.subject === selectedSubExam.subject
+        );
+        
+        const initialMarks = {};
+        const existMap = {};
+        
+        filteredRes.forEach(r => {
+          initialMarks[r.student] = r.marks_obtained;
+          existMap[r.student] = r.id; // রেজাল্ট আইডি সেভ করে রাখছি আপডেটের জন্য
+        });
+        
+        setMarksData(initialMarks);
+        setExistingResultsMap(existMap);
+      }
+    } else {
+      setMarksData({});
+      setExistingResultsMap({});
+    }
+  }, [selectedExamId, selectedSubjectExamId, results, subjectExams]);
+
   const filteredSubjects = subjectExams.filter(se => se.exam.toString() === selectedExamId);
-  
-  // নির্বাচিত পরীক্ষার ক্লাসের উপর ভিত্তি করে স্টুডেন্ট ফিল্টার করা
   const selectedExamObj = exams.find(e => e.id.toString() === selectedExamId);
   const targetClassId = selectedExamObj ? selectedExamObj.class_level : null;
   const filteredStudents = students.filter(s => s.class_level === targetClassId);
 
-  // মার্কস ইনপুট চেঞ্জ হ্যান্ডলার
   const handleMarksChange = (studentId, value) => {
     setMarksData(prev => ({
       ...prev,
@@ -55,7 +91,7 @@ export default function MarksEntry() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!selectedExamId || !selectedSubjectExamId) {
-      setMsg({ type: 'error', text: 'Please select both Exam and Subject.' });
+      showToast('Please select both Exam and Subject.', 'error');
       return;
     }
 
@@ -63,35 +99,46 @@ export default function MarksEntry() {
     if (!selectedSubExamObj) return;
 
     setIsLoading(true);
-    setMsg({ type: '', text: '' });
 
     try {
-      // যেসব স্টুডেন্টের মার্কস দেওয়া হয়েছে, শুধু তাদের ডেটাই পাঠাবো
       const studentIdsWithMarks = Object.keys(marksData).filter(id => marksData[id] !== '');
       
       if(studentIdsWithMarks.length === 0) {
-        setMsg({ type: 'error', text: 'Please enter marks for at least one student.' });
+        showToast('Please enter marks for at least one student.', 'error');
         setIsLoading(false);
         return;
       }
 
-      // লুপ চালিয়ে একটার পর একটা মার্কস সেভ করা
+      // லুপ চালিয়ে চেক করা হচ্ছে যে নতুন ক্রিয়েট করবে নাকি আগেরটা আপডেট করবে
       for (const studentId of studentIdsWithMarks) {
-        await api.post('/exams/results/', {
-          student: studentId,
-          exam: selectedExamId,
-          subject: selectedSubExamObj.subject,
-          marks_obtained: marksData[studentId]
-        });
+        const val = marksData[studentId];
+        const existingResultId = existingResultsMap[studentId];
+
+        if (existingResultId) {
+          // আগে থেকে থাকলে শুধু PATCH (Update) করবে
+          await api.patch(`/exams/results/${existingResultId}/`, {
+            marks_obtained: val
+          });
+        } else {
+          // না থাকলে নতুন করে POST (Create) করবে
+          await api.post('/exams/results/', {
+            student: studentId,
+            exam: selectedExamId,
+            subject: selectedSubExamObj.subject,
+            marks_obtained: val
+          });
+        }
       }
 
-      setMsg({ type: 'success', text: `Marks successfully saved for ${studentIdsWithMarks.length} students!` });
-      setMarksData({}); // মার্কস ক্লিয়ার করে দেওয়া
-      setTimeout(() => setMsg({ type: '', text: '' }), 4000);
+      showToast(`Marks successfully saved/updated for ${studentIdsWithMarks.length} students!`, 'success');
+      
+      // ব্যাকএন্ড থেকে নতুন রেজাল্ট রিফ্রেশ করা
+      const updatedResultsRes = await api.get('/exams/results/');
+      setResults(updatedResultsRes.data);
 
     } catch (error) {
       console.error(error);
-      setMsg({ type: 'error', text: 'Failed to save marks. Please try again.' });
+      showToast('Failed to save marks. Please check your inputs.', 'error');
     } finally {
       setIsLoading(false);
     }
@@ -101,20 +148,24 @@ export default function MarksEntry() {
   const labelClass = "block text-sm font-semibold text-gray-700 mb-1.5";
 
   return (
-    <div className="space-y-6 pb-10">
+    <div className="space-y-6 pb-10 relative">
+      
+      {/* Toast Notification */}
+      <AnimatePresence>
+        {toast.show && (
+          <motion.div initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 50 }} className={`fixed bottom-6 right-6 z-[100] px-6 py-3 rounded-xl shadow-lg font-bold text-white flex items-center gap-3 ${toast.type === 'error' ? 'bg-red-500' : 'bg-[#0e5c3c]'}`}>
+            <span>{toast.type === 'error' ? '⚠️' : '✅'}</span>
+            <span>{toast.message}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
         <h1 className="text-2xl font-bold text-brand-deepPlum">Marks Entry</h1>
-        <p className="text-gray-500 text-sm mt-1">Enter subject-wise marks for students. Grades will be computed automatically.</p>
+        <p className="text-gray-500 text-sm mt-1">Enter or update subject-wise marks. Pre-saved marks will load automatically.</p>
       </motion.div>
 
       <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-        
-        {msg.text && (
-          <div className={`p-4 rounded-xl mb-6 text-sm font-bold ${msg.type === 'success' ? 'bg-brand-mintGreen/20 text-[#0e5c3c]' : 'bg-red-50 text-red-600'}`}>
-            {msg.text}
-          </div>
-        )}
-
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 border-b border-gray-100 pb-8">
           <div>
             <label className={labelClass}>Select Exam *</label>
@@ -122,7 +173,7 @@ export default function MarksEntry() {
               value={selectedExamId} 
               onChange={(e) => {
                 setSelectedExamId(e.target.value);
-                setSelectedSubjectExamId(''); // এক্সাম চেঞ্জ করলে সাবজেক্ট রিসেট হবে
+                setSelectedSubjectExamId(''); 
                 setMarksData({});
               }} 
               className={inputClass}
@@ -151,11 +202,10 @@ export default function MarksEntry() {
           </div>
         </div>
 
-        {/* Students Marks Entry Table */}
         {selectedExamId && selectedSubjectExamId && (
           <form onSubmit={handleSubmit}>
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-bold text-brand-deepPlum">Enter Marks</h3>
+              <h3 className="text-lg font-bold text-brand-deepPlum">Enter / Edit Marks</h3>
               <span className="bg-[#F5F0FF] text-brand-royalPurple px-3 py-1 rounded-lg text-xs font-bold border border-brand-softLavender/30">
                 Total Students: {filteredStudents.length}
               </span>
@@ -182,15 +232,21 @@ export default function MarksEntry() {
                           <p className="text-xs text-gray-400">{student.student_id}</p>
                         </td>
                         <td className="p-4 text-right">
-                          <input 
-                            type="number" 
-                            step="0.01"
-                            min="0"
-                            placeholder="0.00"
-                            value={marksData[student.id] || ''}
-                            onChange={(e) => handleMarksChange(student.id, e.target.value)}
-                            className="w-24 px-3 py-2 text-right rounded-lg border border-gray-200 focus:outline-none focus:border-brand-tealCyan font-bold text-brand-deepPlum bg-white shadow-sm"
-                          />
+                          <div className="relative inline-block">
+                            <input 
+                              type="number" 
+                              step="0.01"
+                              min="0"
+                              placeholder="0.00"
+                              value={marksData[student.id] !== undefined ? marksData[student.id] : ''}
+                              onChange={(e) => handleMarksChange(student.id, e.target.value)}
+                              className={`w-28 px-3 py-2 text-right rounded-lg border focus:outline-none focus:border-brand-tealCyan font-bold bg-white shadow-sm ${existingResultsMap[student.id] ? 'border-brand-tealCyan text-[#0e5c3c]' : 'border-gray-200 text-brand-deepPlum'}`}
+                            />
+                            {/* যদি আগে থেকে ডাটাবেসে সেভ থাকে তবে একটি ছোট টিক চিহ্ন দেখাবে */}
+                            {existingResultsMap[student.id] && (
+                               <span className="absolute -left-5 top-2.5 text-[#0e5c3c] text-sm" title="Already Saved (You can edit it)">✅</span>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ))
@@ -205,7 +261,7 @@ export default function MarksEntry() {
                 disabled={isLoading || filteredStudents.length === 0} 
                 className={`px-8 py-3 rounded-xl text-brand-deepPlum font-bold transition-colors shadow-md ${isLoading || filteredStudents.length === 0 ? 'bg-gray-300 cursor-not-allowed' : 'bg-brand-tealCyan hover:bg-[#4bc2ab]'}`}
               >
-                {isLoading ? 'Saving Marks...' : 'Save All Marks'}
+                {isLoading ? 'Processing...' : 'Save / Update Marks'}
               </button>
             </div>
           </form>

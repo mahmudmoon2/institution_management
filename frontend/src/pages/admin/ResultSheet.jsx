@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import api from '../../api/axios';
 import { Link } from 'react-router-dom';
 
@@ -14,6 +14,14 @@ export default function ResultSheet() {
   
   const [isLoading, setIsLoading] = useState(false);
 
+  // Custom Toast State
+  const [toast, setToast] = useState({ show: false, message: '', type: 'error' });
+
+  const showToast = (message, type = 'error') => {
+    setToast({ show: true, message, type });
+    setTimeout(() => setToast({ show: false, message: '', type: '' }), 4000);
+  };
+
   useEffect(() => {
     fetchInitialData();
   }, []);
@@ -25,10 +33,10 @@ export default function ResultSheet() {
         api.get('/exams/grades/')
       ]);
       setExams(examRes.data);
-      // GPA এর ভিত্তিতে বড় থেকে ছোট সাজানো
       setGrades(gradeRes.data.sort((a, b) => b.gpa_value - a.gpa_value));
     } catch (error) {
       console.error("Error fetching initial data", error);
+      showToast("Failed to load initial data.", "error");
     }
   };
 
@@ -44,20 +52,18 @@ export default function ResultSheet() {
       
       const selectedExam = exams.find(e => e.id.toString() === examId.toString());
       
-      // ওই পরীক্ষার ক্লাসের স্টুডেন্টদের ফিল্টার করা
       const classStudents = stuRes.data.filter(s => s.class_level === selectedExam?.class_level);
       setStudents(classStudents);
       
-      // ওই পরীক্ষার সাবজেক্টগুলো ফিল্টার করা
       const examSubjects = subExamRes.data.filter(se => se.exam.toString() === examId.toString());
       setSubjectExams(examSubjects);
       
-      // ওই পরীক্ষার সব রেজাল্ট ফিল্টার করা
       const examResults = resultRes.data.filter(r => r.exam.toString() === examId.toString());
       setResults(examResults);
 
     } catch (error) {
       console.error("Error fetching results", error);
+      showToast("Failed to fetch exam results.", "error");
     } finally {
       setIsLoading(false);
     }
@@ -75,13 +81,11 @@ export default function ResultSheet() {
     }
   };
 
-  // স্টুডেন্টের নির্দিষ্ট সাবজেক্টের মার্কস বের করা
   const getSubjectMarks = (studentId, subjectId) => {
     const res = results.find(r => r.student === studentId && r.subject === subjectId);
     return res ? { marks: res.marks_obtained, grade: res.grade_name } : { marks: '-', grade: '-' };
   };
 
-  // টোটাল মার্কস, GPA এবং ফাইনাল গ্রেড হিসাব করা
   const calculateFinalResult = (studentId) => {
     const studentResults = results.filter(r => r.student === studentId);
     if (studentResults.length === 0) return { total: 0, gpa: 0, grade: 'N/A' };
@@ -95,39 +99,74 @@ export default function ResultSheet() {
       const gradeObj = grades.find(g => g.id === r.grade);
       const gpa = gradeObj ? Number(gradeObj.gpa_value) : 0;
       totalGpa += gpa;
-      if (gpa === 0) hasFailed = true; // 0 GPA মানে ফেইল
+      if (gpa === 0) hasFailed = true;
     });
 
-    // যদি কোনো সাবজেক্টের মার্কস এন্ট্রি বাকি থাকে
     if (studentResults.length < subjectExams.length) return { total: totalMarks, gpa: 0, grade: 'Incomplete' };
-    
-    // যদি কোনো এক সাবজেক্টে ফেইল করে
     if (hasFailed) return { total: totalMarks, gpa: 0, grade: 'F' };
 
-    // গড় জিপিএ (Average GPA)
     const avgGpa = (totalGpa / subjectExams.length).toFixed(2);
-    
-    // গড় জিপিএ অনুযায়ী ফাইনাল গ্রেড বের করা
     const finalGradeObj = grades.find(g => Number(g.gpa_value) <= Number(avgGpa)) || { name: 'F' };
 
     return { total: totalMarks, gpa: avgGpa, grade: finalGradeObj.name };
   };
 
+  // পুরো ক্লাসের ট্যাবুলেশন শিট প্রিন্ট
+  const handlePrintSheet = async () => {
+    if (!selectedExamId) {
+      showToast("Please select an exam first.", "error");
+      return;
+    }
+    try {
+      showToast("Generating Tabulation Sheet...", "success");
+      const response = await api.get(`/exams/tabulation/pdf/${selectedExamId}/`, { responseType: 'blob' });
+      const fileURL = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+      window.open(fileURL, '_blank');
+    } catch (error) {
+      console.error("Failed to generate PDF", error);
+      showToast("Failed to generate Tabulation Sheet PDF.", "error");
+    }
+  };
+
+  // --- NEW: ইন্ডিভিজুয়াল মার্কশিট পিডিএফ প্রিন্ট ---
+  const handlePrintIndividualMarksheet = async (studentId) => {
+    try {
+      showToast("Generating Marksheet PDF...", "success");
+      const response = await api.get(`/exams/marksheet/pdf/${selectedExamId}/${studentId}/`, { responseType: 'blob' });
+      const fileURL = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+      window.open(fileURL, '_blank');
+    } catch (error) {
+      console.error("Failed to generate PDF", error);
+      showToast("Failed to generate Individual Marksheet PDF.", "error");
+    }
+  };
+
   return (
-    <div className="space-y-6 pb-10">
-      <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex justify-between items-center print:hidden">
+    <div className="space-y-6 pb-10 relative">
+      
+      {/* Toast Notification */}
+      <AnimatePresence>
+        {toast.show && (
+          <motion.div initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 50 }} className={`fixed bottom-6 right-6 z-[100] px-6 py-3 rounded-xl shadow-lg font-bold text-white flex items-center gap-3 ${toast.type === 'error' ? 'bg-red-500' : 'bg-[#0e5c3c]'}`}>
+            <span>{toast.type === 'error' ? '⚠️' : '✅'}</span>
+            <span>{toast.message}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold text-brand-deepPlum">Tabulation Sheet</h1>
-          <p className="text-gray-500 text-sm mt-1">View comprehensive results and automatically computed GPAs.</p>
+          <p className="text-gray-500 text-sm mt-1">View comprehensive results and print individual marksheets.</p>
         </div>
-        <button onClick={() => window.print()} className="bg-brand-softLavender/20 text-brand-royalPurple font-bold px-6 py-2.5 rounded-xl hover:bg-brand-softLavender/40 transition-colors flex items-center gap-2 border border-brand-softLavender/30">
-          <span>🖨️</span> Print Sheet
+        <button onClick={handlePrintSheet} className="bg-brand-softLavender/20 text-brand-royalPurple font-bold px-6 py-2.5 rounded-xl hover:bg-brand-softLavender/40 transition-colors flex items-center gap-2 border border-brand-softLavender/30">
+          <span>🖨️</span> Print Master Sheet
         </button>
       </motion.div>
 
-      <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 print:shadow-none print:border-none print:p-0">
+      <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
         
-        <div className="mb-6 w-full md:w-1/3 print:hidden">
+        <div className="mb-6 w-full md:w-1/3">
           <label className="block text-sm font-semibold text-gray-700 mb-1.5">Select Exam to View Results</label>
           <select 
             value={selectedExamId} 
@@ -143,7 +182,7 @@ export default function ResultSheet() {
         {isLoading ? (
           <div className="text-center py-10 font-bold text-gray-500">Loading Results...</div>
         ) : selectedExamId && students.length > 0 && subjectExams.length > 0 ? (
-          <div className="overflow-x-auto rounded-xl border border-gray-200 print:border-none">
+          <div className="overflow-x-auto rounded-xl border border-gray-200">
             <table className="w-full text-center border-collapse text-sm">
               <thead>
                 <tr className="bg-brand-deepPlum text-white">
@@ -157,7 +196,7 @@ export default function ResultSheet() {
                   <th className="p-3 border border-white/20 bg-brand-royalPurple">Total</th>
                   <th className="p-3 border border-white/20 bg-brand-royalPurple">GPA</th>
                   <th className="p-3 border border-white/20 bg-brand-royalPurple">Grade</th>
-                  <th className="p-3 border border-white/20 bg-brand-royalPurple print:hidden">Action</th>
+                  <th className="p-3 border border-white/20 bg-brand-royalPurple text-center">Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -170,7 +209,6 @@ export default function ResultSheet() {
                         <p className="text-xs text-gray-500">ID: {student.student_id} | Roll: {student.roll_number}</p>
                       </td>
                       
-                      {/* Dynamic Subject Columns */}
                       {subjectExams.map(sub => {
                         const { marks, grade } = getSubjectMarks(student.id, sub.subject);
                         return (
@@ -181,7 +219,6 @@ export default function ResultSheet() {
                         );
                       })}
 
-                      {/* Final Computed Columns */}
                       <td className="p-3 border border-gray-200 font-bold text-brand-deepPlum">{finalRes.total}</td>
                       <td className="p-3 border border-gray-200 font-bold text-[#0e5c3c]">{finalRes.gpa}</td>
                       <td className="p-3 border border-gray-200">
@@ -189,14 +226,27 @@ export default function ResultSheet() {
                           {finalRes.grade}
                         </span>
                       </td>
-                      <td className="p-3 border border-gray-200 print:hidden text-center">
-                        <Link 
-                          to={`/admin/marksheet/${selectedExamId}/${student.id}`} 
-                          className="bg-gray-100 hover:bg-brand-tealCyan/20 text-brand-deepPlum px-3 py-1.5 rounded-lg text-xs font-bold transition-colors inline-block whitespace-nowrap border border-gray-200"
-                        >
-                          View Marksheet
-                        </Link>
+                      
+                      {/* Action Column with dual options */}
+                      <td className="p-3 border border-gray-200 text-center">
+                        <div className="flex justify-center items-center gap-2">
+                          <Link 
+                            to={`/admin/marksheet/${selectedExamId}/${student.id}`} 
+                            title="View Detail"
+                            className="bg-gray-100 hover:bg-brand-tealCyan/20 text-brand-deepPlum px-3 py-1.5 rounded-lg text-xs font-bold transition-colors inline-block whitespace-nowrap border border-gray-200"
+                          >
+                            👁️ View
+                          </Link>
+                          <button 
+                            onClick={() => handlePrintIndividualMarksheet(student.id)} 
+                            title="Download PDF"
+                            className="bg-brand-royalPurple hover:bg-brand-deepPlum text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-colors inline-block whitespace-nowrap shadow-sm"
+                          >
+                            🖨️ PDF
+                          </button>
+                        </div>
                       </td>
+                      
                     </tr>
                   );
                 })}

@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Salary Statement - {{ profile.employee_name }}</title>
+    <style>
+        @page {
+            size: A3 landscape;
+            margin: 1cm;
+        }
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            color: #1a1a1a;
+            font-size: 10px;
+        }
+        .header {
+            text-align: center;
+            border-bottom: 3px solid #1a3c6e;
+            padding-bottom: 8px;
+            margin-bottom: 12px;
+        }
+        .header h1 {
+            font-size: 18px;
+            color: #1a3c6e;
+            margin: 0 0 3px 0;
+        }
+        .header p {
+            margin: 1px 0;
+            color: #555;
+            font-size: 9px;
+        }
+        .title {
+            text-align: center;
+            font-size: 13px;
+            font-weight: bold;
+            color: #1a3c6e;
+            margin: 10px 0;
+            text-transform: uppercase;
+        }
+        .emp-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 9px;
+            border: 1px solid #ddd;
+            padding: 8px 10px;
+            background-color: #f9faff;
+        }
+        .emp-info span { margin-right: 20px; }
+        .emp-info strong { color: #1a3c6e; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 8.5px;
+        }
+        thead th {
+            background-color: #1a3c6e;
+            color: white;
+            padding: 5px 3px;
+            text-align: center;
+            font-size: 7.5px;
+        }
+        tbody td {
+            padding: 4px 3px;
+            border: 1px solid #ddd;
+            text-align: right;
+        }
+        tbody td:first-child { text-align: left; font-weight: 600; }
+        tbody td.text-left { text-align: left; }
+        tbody td.text-center { text-align: center; }
+
+        .status-paid { color: #2e7d32; font-weight: bold; }
+        .status-unpaid { color: #c62828; font-weight: bold; }
+
+        .summary-table {
+            margin-top: 12px;
+            width: auto;
+            float: right;
+            font-size: 9px;
+        }
+        .summary-table td {
+            padding: 5px 12px;
+            border: 1px solid #1a3c6e;
+            font-weight: bold;
+        }
+        .summary-table td:first-child {
+            background-color: #1a3c6e;
+            color: white;
+        }
+        .summary-table tr.total-row td {
+            font-size: 11px;
+            background-color: #e8f5e9;
+            color: #1a3c6e;
+        }
+
+        .footer {
+            text-align: center;
+            font-size: 8px;
+            color: #888;
+            margin-top: 20px;
+            border-top: 1px solid #ddd;
+            padding-top: 8px;
+            clear: both;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>IDEAL ACADEMY</h1>
+        <p>123 School Road, Dhaka, Bangladesh | Phone: +880-2-XXXXXXX</p>
+        <p>Email: info@idealacademy.edu | Website: www.idealacademy.edu</p>
+    </div>
+
+    <div class="title">FULL SALARY STATEMENT</div>
+
+    <div class="emp-info">
+        <span><strong>Employee:</strong> {{ profile.employee_name }}</span>
+        <span><strong>Type:</strong> {{ profile.get_employee_type_display }}</span>
+        <span><strong>Basic Salary:</strong> BDT {{ profile.basic_salary|floatformat:2 }}</span>
+        <span><strong>Date:</strong> {{ date|date:"d F, Y" }}</span>
+    </div>
+
+    {% if statement_data %}
+    <table>
+        <thead>
+            <tr>
+                <th>Month</th>
+                <th>Basic</th>
+                <th>H.Rent</th>
+                <th>Medical</th>
+                <th>Transport</th>
+                <th>Other</th>
+                <th>Bonus</th>
+                <th>Gross Pay</th>
+                <th>PF</th>
+                <th>Tax</th>
+                <th>Loan EMI</th>
+                <th>Unpaid Leave</th>
+                <th>Other Ded.</th>
+                <th>Total Ded.</th>
+                <th>Net Payable</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in statement_data %}
+            <tr>
+                <td>{{ row.month_name }}</td>
+                <td>{{ row.basic_salary|floatformat:2 }}</td>
+                <td>{{ row.house_rent|floatformat:2 }}</td>
+                <td>{{ row.medical_allowance|floatformat:2 }}</td>
+                <td>{{ row.transport_allowance|floatformat:2 }}</td>
+                <td>{{ row.other_allowance|floatformat:2 }}</td>
+                <td>{{ row.bonus|floatformat:2 }}</td>
+                <td><strong>{{ row.gross_pay|floatformat:2 }}</strong></td>
+                <td>{{ row.pf_deduction|floatformat:2 }}</td>
+                <td>{{ row.tax_deduction|floatformat:2 }}</td>
+                <td>{{ row.loan_deduction|floatformat:2 }}</td>
+                <td>{{ row.unpaid_leave_deduction|floatformat:2 }}</td>
+                <td>{{ row.other_deduction|floatformat:2 }}</td>
+                <td>{{ row.total_deductions|floatformat:2 }}</td>
+                <td><strong>BDT {{ row.net_payable|floatformat:2 }}</strong></td>
+                <td class="text-center">
+                    {% if row.payment_status == 'Paid' %}
+                        <span class="status-paid">PAID ✓</span>
+                    {% else %}
+                        <span class="status-unpaid">UNPAID</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <table class="summary-table">
+        <tr>
+            <td>Total Gross</td><td>BDT {{ total_gross|floatformat:2 }}</td>
+        </tr>
+        <tr>
+            <td>Total Bonus</td><td>BDT {{ total_bonus|floatformat:2 }}</td>
+        </tr>
+        <tr>
+            <td>Total Deductions</td><td>BDT {{ total_deductions|floatformat:2 }}</td>
+        </tr>
+        <tr class="total-row">
+            <td>TOTAL NET</td><td>BDT {{ total_net|floatformat:2 }}</td>
+        </tr>
+    </table>
+    {% else %}
+    <div style="text-align:center; padding:40px; color:#999;">
+        <p style="font-size:14px;">No salary records found for this employee.</p>
+    </div>
+    {% endif %}
+
+    <div class="footer">
+        <p>This is a computer-generated statement. | Ideal Academy, Dhaka, Bangladesh</p>
+    </div>
+
+</body>
+</html>

@@ -3,32 +3,32 @@ import { motion, AnimatePresence } from 'framer-motion';
 import api from '../../api/axios';
 
 export default function CollectFee() {
-  // Tabs State
-  const [activeTab, setActiveTab] = useState('collect'); // 'collect' | 'all'
-
-  // Data States
+  const [activeTab, setActiveTab] = useState('collect');
   const [students, setStudents] = useState([]);
   const [categories, setCategories] = useState([]);
   const [allPayments, setAllPayments] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [msg, setMsg] = useState({ type: '', text: '' });
+  
+  // Custom Toast State
+  const [toast, setToast] = useState({ show: false, message: '', type: 'error' });
 
-  // Search & Edit States
+  const showToast = (message, type = 'error') => {
+    setToast({ show: true, message, type });
+    setTimeout(() => setToast({ show: false, message: '', type: '' }), 4000);
+  };
+
   const [searchTerm, setSearchTerm] = useState('');
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editData, setEditData] = useState(null);
+  const [repayAmount, setRepayAmount] = useState('');
 
   const currentMonth = new Date().toLocaleString('default', { month: 'long' });
   const currentYear = new Date().getFullYear();
   const [selectedCategories, setSelectedCategories] = useState([]);
-  const [payingAmount, setPayingAmount] = useState(''); // নতুন স্টেট: বর্তমানে কত টাকা দিচ্ছে
+  const [payingAmount, setPayingAmount] = useState('');
   
   const [formData, setFormData] = useState({
-    student: '',
-    method: 'Cash',
-    month: currentMonth,
-    year: currentYear,
-    notes: ''
+    student: '', method: 'Cash', month: currentMonth, year: currentYear, notes: ''
   });
 
   useEffect(() => {
@@ -47,53 +47,47 @@ export default function CollectFee() {
       setAllPayments(payRes.data);
     } catch (error) {
       console.error("Error fetching data:", error);
+      showToast("Failed to fetch initial data from server.", "error");
     }
   };
 
-  // --- Collect Fee Logic ---
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
+  const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
   const toggleCategory = (category) => {
     const isSelected = selectedCategories.find(c => c.id === category.id);
-    if (isSelected) {
-      setSelectedCategories(selectedCategories.filter(c => c.id !== category.id));
-    } else {
-      setSelectedCategories([...selectedCategories, category]);
-    }
+    if (isSelected) setSelectedCategories(selectedCategories.filter(c => c.id !== category.id));
+    else setSelectedCategories([...selectedCategories, category]);
   };
 
   const totalBill = selectedCategories.reduce((sum, cat) => sum + Number(cat.amount), 0);
 
-  // ক্যাটাগরি সিলেক্ট করলে অটোমেটিক্যালি Paying Amount আপডেট হবে
-  useEffect(() => {
-    setPayingAmount(totalBill);
-  }, [totalBill]);
+  useEffect(() => { setPayingAmount(totalBill); }, [totalBill]);
 
   const dueAmount = totalBill - Number(payingAmount);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (selectedCategories.length === 0) {
-      setMsg({ type: 'error', text: 'Please select at least one fee category.' });
+      showToast("Please select at least one fee category.", "error");
       return;
     }
     if (Number(payingAmount) < 0 || Number(payingAmount) > totalBill) {
-      setMsg({ type: 'error', text: 'Invalid paying amount.' });
+      showToast("Invalid paying amount.", "error");
       return;
     }
 
     setIsLoading(true);
-    setMsg({ type: '', text: '' });
     
     try {
+      const today = new Date().toLocaleDateString('en-GB');
+      const initialNote = `Initial Payment: ৳${Number(payingAmount)} on ${today}. ${formData.notes}`;
+
       const payload = {
         student: formData.student,
         method: formData.method,
         month: formData.month,
         year: formData.year,
-        notes: formData.notes,
+        notes: initialNote.trim(),
         total_bill: totalBill,
         amount_paid: Number(payingAmount),
         due_amount: dueAmount,
@@ -102,21 +96,19 @@ export default function CollectFee() {
 
       await api.post('/payments/bulk-collect/', payload);
       
-      setMsg({ type: 'success', text: `Successfully collected ৳${payingAmount}! ${dueAmount > 0 ? `(Due: ৳${dueAmount})` : ''}` });
+      showToast(`Successfully collected ৳${payingAmount}! ${dueAmount > 0 ? `(Due: ৳${dueAmount})` : ''}`, "success");
       setFormData({ student: '', method: 'Cash', month: currentMonth, year: currentYear, notes: '' });
       setSelectedCategories([]);
       setPayingAmount('');
       fetchInitialData();
-      setTimeout(() => setMsg({ type: '', text: '' }), 4000);
     } catch (error) {
       console.error(error);
-      setMsg({ type: 'error', text: 'Failed to process payments. Check all inputs.' });
+      showToast("Failed to process payments. Check all inputs.", "error");
     } finally {
       setIsLoading(false);
     }
   };
 
-  // --- All Receipts Logic ---
   const filteredPayments = allPayments.filter(p => 
     p.receipt_number?.toLowerCase().includes(searchTerm.toLowerCase()) || 
     p.student_name?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -124,30 +116,43 @@ export default function CollectFee() {
 
   const handleEditClick = (payment) => {
     setEditData(payment);
+    setRepayAmount(''); 
     setIsEditModalOpen(true);
-  };
-
-  const handleEditChange = (e) => {
-    setEditData({ ...editData, [e.target.name]: e.target.value });
   };
 
   const handleUpdatePayment = async (e) => {
     e.preventDefault();
     try {
+      let updatedPaid = Number(editData.amount_paid);
+      let updatedDue = Number(editData.due_amount);
+      let updatedNotes = editData.notes || '';
+
+      const newPayment = Number(repayAmount);
+      if (newPayment > 0) {
+        if (newPayment > updatedDue) {
+          showToast("Repayment amount cannot be greater than the due amount!", "error");
+          return;
+        }
+        updatedPaid += newPayment;
+        updatedDue -= newPayment;
+        
+        const today = new Date().toLocaleDateString('en-GB');
+        const historyLine = `Repayment: ৳${newPayment} on ${today}`;
+        updatedNotes = updatedNotes ? `${updatedNotes} | ${historyLine}` : historyLine;
+      }
+
       await api.patch(`/payments/${editData.id}/`, {
-        amount_paid: editData.amount_paid,
-        due_amount: editData.due_amount,
-        method: editData.method,
-        month: editData.month,
-        year: editData.year,
-        notes: editData.notes
+        amount_paid: updatedPaid,
+        due_amount: updatedDue,
+        notes: updatedNotes
       });
+      
       setIsEditModalOpen(false);
       fetchInitialData(); 
-      alert("Receipt updated successfully!");
+      showToast("Receipt updated successfully!", "success");
     } catch (error) {
       console.error("Failed to update receipt", error);
-      alert("Failed to update receipt. Please try again.");
+      showToast("Failed to update receipt. Please try again.", "error");
     }
   };
 
@@ -158,19 +163,29 @@ export default function CollectFee() {
   return (
     <div className="space-y-6 relative pb-10">
       
-      {/* Header & Tabs */}
+      {/* Toast Notification */}
+      <AnimatePresence>
+        {toast.show && (
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 50 }}
+            className={`fixed bottom-6 right-6 z-[100] px-6 py-3 rounded-xl shadow-lg font-bold text-white flex items-center gap-3 ${toast.type === 'error' ? 'bg-red-500' : 'bg-[#0e5c3c]'}`}
+          >
+            <span>{toast.type === 'error' ? '⚠️' : '✅'}</span>
+            <span>{toast.message}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold text-brand-deepPlum">Fee Management</h1>
           <p className="text-gray-500 text-sm mt-1">Process payments, partial dues, and manage receipts.</p>
         </div>
         <div className="flex bg-gray-100 p-1 rounded-xl">
-          <button onClick={() => setActiveTab('collect')} className={`px-6 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'collect' ? 'bg-white text-brand-royalPurple shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
-            Collect Fee
-          </button>
-          <button onClick={() => setActiveTab('all')} className={`px-6 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'all' ? 'bg-white text-brand-royalPurple shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
-            All Receipts
-          </button>
+          <button onClick={() => setActiveTab('collect')} className={`px-6 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'collect' ? 'bg-white text-brand-royalPurple shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>Collect Fee</button>
+          <button onClick={() => setActiveTab('all')} className={`px-6 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'all' ? 'bg-white text-brand-royalPurple shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>All Receipts</button>
         </div>
       </motion.div>
 
@@ -179,11 +194,7 @@ export default function CollectFee() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="lg:col-span-1 bg-white p-6 rounded-2xl shadow-sm border border-gray-100 h-fit">
             <h2 className="text-lg font-bold text-brand-royalPurple mb-4 border-b pb-2">Payment Details</h2>
-            {msg.text && (
-              <div className={`p-3 rounded-xl mb-4 text-sm font-bold ${msg.type === 'success' ? 'bg-brand-mintGreen/20 text-[#0e5c3c]' : 'bg-red-50 text-red-600'}`}>
-                {msg.text}
-              </div>
-            )}
+            
             <form onSubmit={handleSubmit} className="space-y-5">
               <div>
                 <label className={labelClass}>Search & Select Student *</label>
@@ -209,7 +220,6 @@ export default function CollectFee() {
                 </div>
               </div>
 
-              {/* Partial Payment Calculation Box */}
               <div className="bg-[#F5F0FF] border border-brand-softLavender/30 p-4 rounded-xl space-y-3">
                 <div className="flex justify-between items-center">
                   <span className="font-bold text-brand-deepPlum">Total Bill:</span>
@@ -222,9 +232,7 @@ export default function CollectFee() {
                     value={payingAmount} 
                     onChange={(e) => setPayingAmount(e.target.value)} 
                     className="w-28 text-right font-bold text-lg text-[#0e5c3c] border-b border-gray-200 focus:outline-none focus:border-brand-tealCyan" 
-                    max={totalBill}
-                    min={0}
-                    required
+                    max={totalBill} min={0} required
                   />
                 </div>
                 <div className="flex justify-between items-center pt-2 border-t border-brand-softLavender/40">
@@ -350,7 +358,9 @@ export default function CollectFee() {
                         {new Date(payment.created_at).toLocaleDateString('en-GB')}
                       </td>
                       <td className="p-3 text-center flex justify-center gap-3">
-                        <button onClick={() => handleEditClick(payment)} className="text-blue-500 hover:text-blue-700 text-sm font-bold">✏️ Edit</button>
+                        <button onClick={() => handleEditClick(payment)} className="text-blue-500 hover:text-blue-700 text-sm font-bold">
+                          {Number(payment.due_amount) > 0 ? 'Repay Due' : '✏️ Edit'}
+                        </button>
                         <a href={`${import.meta.env.VITE_API_BASE_URL}/payments/receipt/${payment.receipt_number}/pdf/`} target="_blank" rel="noopener noreferrer" className="text-brand-tealCyan hover:text-[#4bc2ab] font-bold text-lg">🖨️</a>
                       </td>
                     </tr>
@@ -362,53 +372,76 @@ export default function CollectFee() {
         </motion.div>
       )}
 
-      {/* ----------- EDIT MODAL ----------- */}
+      {/* ----------- REPAY DUE / EDIT MODAL ----------- */}
       <AnimatePresence>
         {isEditModalOpen && editData && (
           <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
             <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-lg">
               <div className="flex justify-between items-center mb-4 border-b pb-3">
-                <h2 className="text-xl font-bold text-brand-deepPlum">Update Receipt: {editData.receipt_number}</h2>
+                <h2 className="text-xl font-bold text-brand-deepPlum">
+                  {Number(editData.due_amount) > 0 ? 'Repay Due Amount' : 'Update Receipt Details'}
+                </h2>
                 <button onClick={() => setIsEditModalOpen(false)} className="text-gray-400 hover:text-red-500 font-bold text-xl">&times;</button>
               </div>
+
+              {Number(editData.due_amount) > 0 && (
+                <div className="bg-red-50 border border-red-100 p-4 rounded-xl mb-4 flex justify-between items-center">
+                  <div>
+                    <p className="text-xs text-red-500 font-bold uppercase">Current Due</p>
+                    <p className="text-2xl font-bold text-red-600">৳ {editData.due_amount}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs text-gray-500 font-bold uppercase">Total Bill</p>
+                    <p className="font-bold text-gray-700">৳ {editData.total_amount}</p>
+                  </div>
+                </div>
+              )}
+
               <form onSubmit={handleUpdatePayment} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+                
+                {Number(editData.due_amount) > 0 ? (
                   <div>
-                    <label className={labelClass}>Amount Paid (৳)</label>
-                    <input type="number" name="amount_paid" value={editData.amount_paid} onChange={handleEditChange} className={inputClass} required />
+                    <label className={labelClass}>Amount Paying Now (৳)</label>
+                    <input 
+                      type="number" 
+                      max={editData.due_amount}
+                      min="0"
+                      value={repayAmount} 
+                      onChange={(e) => setRepayAmount(e.target.value)} 
+                      className={`${inputClass} border-brand-tealCyan bg-brand-mintGreen/10 font-bold text-lg text-[#0e5c3c]`} 
+                      placeholder={`Max: ৳${editData.due_amount}`}
+                    />
                   </div>
-                  <div>
-                    <label className={labelClass}>Due Amount (৳)</label>
-                    <input type="number" name="due_amount" value={editData.due_amount} onChange={handleEditChange} className={inputClass} required />
+                ) : (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className={labelClass}>Total Paid (৳)</label>
+                      <input type="number" name="amount_paid" value={editData.amount_paid} onChange={(e) => setEditData({...editData, amount_paid: e.target.value})} className={inputClass} required />
+                    </div>
+                    <div>
+                      <label className={labelClass}>Total Due (৳)</label>
+                      <input type="number" name="due_amount" value={editData.due_amount} onChange={(e) => setEditData({...editData, due_amount: e.target.value})} className={inputClass} required />
+                    </div>
                   </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className={labelClass}>Month</label>
-                    <select name="month" value={editData.month} onChange={handleEditChange} className={inputClass}>
-                      {months.map(m => <option key={m} value={m}>{m}</option>)}
-                    </select>
-                  </div>
-                  <div>
-                    <label className={labelClass}>Year</label>
-                    <input type="number" name="year" value={editData.year} onChange={handleEditChange} className={inputClass} />
-                  </div>
-                </div>
+                )}
+
                 <div>
-                  <label className={labelClass}>Payment Method</label>
-                  <select name="method" value={editData.method} onChange={handleEditChange} className={inputClass}>
-                    <option value="Cash">Cash</option>
-                    <option value="Online">Online / Mobile Banking</option>
-                    <option value="Cheque">Cheque</option>
-                  </select>
+                  <label className={labelClass}>Notes / Payment History</label>
+                  <textarea 
+                    name="notes" 
+                    rows="3" 
+                    value={editData.notes || ''} 
+                    onChange={(e) => setEditData({...editData, notes: e.target.value})} 
+                    className={`${inputClass} text-xs font-mono`}
+                    placeholder="Transaction history will appear here..."
+                  ></textarea>
                 </div>
-                <div>
-                  <label className={labelClass}>Notes</label>
-                  <textarea name="notes" rows="2" value={editData.notes || ''} onChange={handleEditChange} className={inputClass}></textarea>
-                </div>
+                
                 <div className="flex gap-3 pt-4">
                   <button type="button" onClick={() => setIsEditModalOpen(false)} className="w-1/2 py-2.5 rounded-xl border border-gray-300 text-gray-600 font-bold hover:bg-gray-50">Cancel</button>
-                  <button type="submit" className="w-1/2 py-2.5 rounded-xl bg-brand-royalPurple text-white font-bold hover:bg-opacity-90">Update Receipt</button>
+                  <button type="submit" className="w-1/2 py-2.5 rounded-xl bg-brand-royalPurple text-white font-bold hover:bg-opacity-90">
+                    {Number(editData.due_amount) > 0 && repayAmount ? 'Process Repayment' : 'Update Receipt'}
+                  </button>
                 </div>
               </form>
             </motion.div>

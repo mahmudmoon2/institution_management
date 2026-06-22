@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Exam Routine</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700&display=swap');
+        
+        @page {
+            size: A4 portrait;
+            margin: 1.5cm;
+            @bottom-right {
+                content: "Page " counter(page) " of " counter(pages);
+                font-family: 'Roboto', sans-serif;
+                font-size: 9px;
+            }
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            font-size: 12px;
+            color: #000;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* --- Header Section --- */
+        .header-section {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .school-name {
+            font-size: 22px;
+            font-weight: 700;
+            margin: 0 0 5px 0;
+            text-transform: uppercase;
+        }
+
+        .exam-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin: 0 0 5px 0;
+        }
+
+        .instruction {
+            font-size: 11px;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        /* --- Meta Info (Memo & Date) --- */
+        .meta-table {
+            width: 100%;
+            border: none;
+            margin-bottom: 10px;
+            font-size: 11px;
+        }
+        .meta-table td {
+            border: none;
+            padding: 0;
+        }
+
+        /* --- Main Board Table --- */
+        .board-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 40px;
+        }
+
+        .board-table th, .board-table td {
+            border: 1px solid #000;
+            padding: 8px 10px;
+            vertical-align: middle;
+        }
+
+        .board-table th {
+            font-size: 12px;
+            font-weight: 600;
+            text-align: center;
+            background-color: #f9f9f9; 
+            text-transform: uppercase;
+        }
+
+        .board-table td {
+            font-size: 11px;
+        }
+
+        .text-center { text-align: center; }
+        .text-left { text-align: left; }
+        .text-right { text-align: right; }
+
+        /* --- Signatures --- */
+        .signature-table {
+            width: 100%;
+            border: none;
+            margin-top: 50px;
+        }
+        .signature-table td {
+            border: none;
+            text-align: center;
+            vertical-align: bottom;
+            padding: 0;
+            width: 50%;
+        }
+        .sig-line {
+            display: inline-block;
+            border-top: 1px solid #000;
+            padding-top: 5px;
+            width: 200px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header-section">
+        <h1 class="school-name">Dhaka Ideal Academy</h1>
+        <h2 class="exam-title">
+            {% if exam_info %}
+                {{ exam_info.name }} - {{ exam_info.academic_year }}
+            {% else %}
+                Schedule for All Examinations
+            {% endif %}
+        </h2>
+        <p class="instruction">[Examinees must take their seats in the examination hall 30 minutes before the exam begins]</p>
+    </div>
+
+    <table class="meta-table">
+        <tr>
+            <td class="text-left">Memo No: DIA/Admin/Exam/2026/</td>
+            <td class="text-right" style="text-align: right;">Date: {% now "d/m/Y" %}</td>
+        </tr>
+    </table>
+
+    <div style="font-size: 11px; margin-bottom: 10px;">
+        This is to notify all concerned that the {% if exam_info %}<strong>{{ exam_info.name }}</strong>{% else %}upcoming examinations{% endif %} will be held according to the following schedule. The authority reserves the right to change this schedule if necessary.
+    </div>
+
+    <table class="board-table">
+        <thead>
+            <tr>
+                <th width="45%">Subject</th>
+                <th width="25%">Time</th>
+                <th width="30%">Date & Day</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% if routines %}
+                {% regroup routines by exam_date as date_list %}
+                
+                {% for date_group in date_list %}
+                    {% for routine in date_group.list %}
+                    <tr>
+                        <td class="text-left">
+                            <strong>{{ routine.subject.name }}</strong>
+                            {% if not exam_info %}
+                                <br><span style="font-size: 10px; color: #555;">({{ routine.exam.name }})</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            {{ routine.exam_time|time:"h:i A" }}
+                        </td>
+                        
+                        {% if forloop.first %}
+                        <td class="text-center" rowspan="{{ date_group.list|length }}">
+                            <strong>{{ date_group.grouper|date:"d/m/Y" }}</strong><br>
+                            {{ date_group.grouper|date:"l" }}
+                        </td>
+                        {% endif %}
+                    </tr>
+                    {% endfor %}
+                {% endfor %}
+            {% else %}
+                <tr>
+                    <td colspan="3" class="text-center" style="padding: 30px;">No examination routine found.</td>
+                </tr>
+            {% endif %}
+        </tbody>
+    </table>
+
+    <table class="signature-table">
+        <tr>
+            <td>
+                <span class="sig-line">Controller of Examinations</span>
+            </td>
+            <td>
+                <span class="sig-line">Principal / Headmaster</span>
+            </td>
+        </tr>
+    </table>
+
+</body>
+</html>

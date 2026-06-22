@@ -70,6 +70,12 @@ class PaymentViewSet(viewsets.ModelViewSet):
         }, status=201)
 
 
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
 def receipt_pdf(request, receipt_number):
     receipt_info = get_object_or_404(PaymentReceipt, receipt_number=receipt_number)
     payments = receipt_info.items.all()
