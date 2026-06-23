@@ -12,9 +12,13 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         if not user:
             raise serializers.ValidationError('Invalid credentials')
 
-        # রোল চেক
-        if role and user.role != role:
-            raise serializers.ValidationError(f'You are not authorized as {role}')
+        # রোল চেক — Student ও Parent একই Portal শেয়ার করে
+        if role:
+            if role == 'STUDENT':
+                if user.role not in ['STUDENT', 'PARENT']:
+                    raise serializers.ValidationError(f'You are not authorized as {role}')
+            elif user.role != role:
+                raise serializers.ValidationError(f'You are not authorized as {role}')
 
         data = super().validate(attrs)
         data['role'] = user.role  # টোকেন রেসপন্সে রোল যোগ করুন

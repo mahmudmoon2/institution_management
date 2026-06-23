@@ -41,6 +41,7 @@ import ResultSheet from './pages/admin/ResultSheet';
 import Marksheet from './pages/admin/Marksheet';
 import AdmitCards from './pages/admin/AdmitCards';
 import ClassTests from './pages/admin/ClassTests';
+import ClassRoutine from './pages/admin/ClassRoutine';
 import Accounts from './pages/admin/Accounts';
 import Inventory from './pages/admin/Inventory';
 import SMSGateway from './pages/admin/SMSGateway';
@@ -58,9 +59,15 @@ import StudentResults from './pages/student/StudentResults';
 import TeacherDashboard from './pages/teacher/TeacherDashboard';
 import StudentAttendance from './pages/teacher/StudentAttendance';
 import TeacherResults from './pages/teacher/TeacherResults';
+import TeacherMessages from './pages/teacher/TeacherMessages';
 
 // Parent Pages
 import ParentDashboard from './pages/parent/ParentDashboard';
+import ParentProfile from './pages/parent/ParentProfile';
+import ParentAttendance from './pages/parent/ParentAttendance';
+import ParentResults from './pages/parent/ParentResults';
+import ParentFees from './pages/parent/ParentFees';
+import ParentMessages from './pages/parent/ParentMessages';
 
 import Careers from './pages/public/Careers';
 import RecruitmentAdmin from './pages/admin/RecruitmentAdmin';
@@ -124,6 +131,7 @@ function App() {
             <Route path="/admin/marksheet/:examId/:studentId" element={<Marksheet />} />
             <Route path="/admin/admit-cards" element={<AdmitCards />} />
             <Route path="/admin/class-tests" element={<ClassTests />} />
+            <Route path="/admin/class-routine" element={<ClassRoutine />} />
             <Route path="/admin/accounts" element={<Accounts />} />
             {/* NEW: CMS Actions */}
             <Route path="/admin/notices/add" element={<AddNotice />} />
@@ -135,8 +143,14 @@ function App() {
             <Route path="/teacher/dashboard" element={<TeacherDashboard />} />
             <Route path="/teacher/attendance" element={<StudentAttendance />} />
             <Route path="/teacher/results" element={<TeacherResults />} />
+            <Route path="/teacher/messages" element={<TeacherMessages />} />
             {/* Parent Routes */}
             <Route path="/parent/dashboard" element={<ParentDashboard />} />
+            <Route path="/parent/profile" element={<ParentProfile />} />
+            <Route path="/parent/attendance" element={<ParentAttendance />} />
+            <Route path="/parent/results" element={<ParentResults />} />
+            <Route path="/parent/fees" element={<ParentFees />} />
+            <Route path="/parent/messages" element={<ParentMessages />} />
             {/* Recruitment Admin */}
             <Route path="/admin/recruitment" element={<RecruitmentAdmin />} />
             <Route path="/admin/password-management" element={<PasswordManagement />} />

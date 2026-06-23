@@ -16,9 +16,7 @@ export default function PublicLayout() {
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 50);
-    };
+    const handleScroll = () => { setScrolled(window.scrollY > 50); };
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
@@ -41,16 +39,24 @@ export default function PublicLayout() {
     i18n.changeLanguage(newLang);
   };
 
-  // All navbar links – added Careers here
   const navLinks = [
-    { name: t('nav.home', 'Home'), path: '/' },
-    { name: t('nav.about_us', 'About Us'), path: '/about-us' },
-    { name: t('nav.notice_board', 'Notice Board'), path: '/notice-board' },
-    { name: t('nav.events', 'Events'), path: '/events' },
-    { name: t('nav.teachers_corner', 'Teachers Corner'), path: '/teachers-corner' },
-    { name: t('nav.blogs', 'Blogs'), path: '/blogs' },
-    { name: t('nav.careers', 'Careers'), path: '/careers' }, // <--- New Career Route
-    { name: t('nav.contact_us', 'Contact Us'), path: '/contact-us' },
+    { name: t('nav.home'), path: '/' },
+    { name: t('nav.about_us'), path: '/about-us' },
+    { name: t('nav.notice_board'), path: '/notice-board' },
+    { name: t('nav.events'), path: '/events' },
+    { name: t('nav.teachers_corner'), path: '/teachers-corner' },
+    { name: t('nav.blogs'), path: '/blogs' },
+    { name: t('nav.careers'), path: '/careers' },
+    { name: t('nav.contact_us'), path: '/contact-us' },
+  ];
+
+  const footerQuickLinks = [
+    { name: t('footer.home'), path: '/' },
+    { name: t('footer.about_us'), path: '/about-us' },
+    { name: t('footer.notice_board'), path: '/notice-board' },
+    { name: t('footer.events'), path: '/events' },
+    { name: t('footer.careers'), path: '/careers' },
+    { name: t('footer.contact_us'), path: '/contact-us' },
   ];
 
   const socialLinks = [
@@ -63,28 +69,28 @@ export default function PublicLayout() {
 
   return (
     <div className="min-h-screen flex flex-col font-sans">
-      {/* Top Bar - hides completely on scroll */}
+      {/* Top Bar */}
       <div className={`bg-brand-deepPlum text-white/90 text-xs py-2 px-6 flex flex-col sm:flex-row justify-between items-center gap-2 transition-all duration-500 ${scrolled ? 'opacity-0 -translate-y-full absolute invisible' : 'opacity-100 translate-y-0 relative'}`}>
         <div className="flex gap-4 flex-wrap justify-center">
-          <Link to="/staffs" className="hover:text-brand-tealCyan transition-colors duration-200">{t('topbar.staffs', 'Staffs')}</Link>
-          <Link to="/alumni" className="hover:text-brand-tealCyan transition-colors duration-200">{t('topbar.alumni', 'Alumni')}</Link>
-          <Link to="/faculty" className="hover:text-brand-tealCyan transition-colors duration-200">{t('topbar.faculty', 'Faculty')}</Link>
-          <Link to="/board" className="hover:text-brand-tealCyan transition-colors duration-200">{t('topbar.managing_board', 'Managing Board')}</Link>
+          <Link to="/staffs" className="hover:text-brand-tealCyan transition-colors duration-200">{t('topbar.staffs')}</Link>
+          <Link to="/alumni" className="hover:text-brand-tealCyan transition-colors duration-200">{t('topbar.alumni')}</Link>
+          <Link to="/faculty" className="hover:text-brand-tealCyan transition-colors duration-200">{t('topbar.faculty')}</Link>
+          <Link to="/board" className="hover:text-brand-tealCyan transition-colors duration-200">{t('topbar.managing_board')}</Link>
         </div>
         <div className="flex gap-4 items-center flex-wrap justify-center">
           {isLoggedIn ? (
             <>
               <Link to={`/${role ? role.toLowerCase() : 'student'}/dashboard`} className="text-brand-mintGreen hover:text-brand-tealCyan transition-colors font-bold tracking-wide">
-                {t('topbar.my_dashboard', 'My Dashboard')}
+                {t('topbar.my_dashboard')}
               </Link>
               <span className="text-gray-500">|</span>
-              <button onClick={handleLogout} className="hover:text-red-400 transition-colors font-semibold">{t('topbar.logout', 'Logout')}</button>
+              <button onClick={handleLogout} className="hover:text-red-400 transition-colors font-semibold">{t('topbar.logout')}</button>
             </>
           ) : (
-            <Link to="/login" className="hover:text-brand-tealCyan transition-colors font-semibold">{t('topbar.portal_login', 'Portal Login')}</Link>
+            <Link to="/login" className="hover:text-brand-tealCyan transition-colors font-semibold">{t('topbar.portal_login')}</Link>
           )}
           <span className="text-gray-500">|</span>
-          <a href="/#faq" className="hover:text-brand-tealCyan transition-colors">{t('topbar.faq', 'FAQ')}</a>
+          <a href="/#faq" className="hover:text-brand-tealCyan transition-colors">{t('topbar.faq')}</a>
           <span className="text-gray-500">|</span>
           <button onClick={toggleLanguage} className="hover:text-brand-tealCyan transition-colors font-bold text-brand-mintGreen">
             {i18n.language === 'en' ? 'বাংলা' : 'English'}
@@ -92,7 +98,7 @@ export default function PublicLayout() {
         </div>
       </div>
 
-      {/* Main Header - hides completely on scroll */}
+      {/* Main Header */}
       <header className={`bg-white/95 backdrop-blur-sm shadow-lg sticky top-0 z-40 py-3 px-6 md:px-12 flex flex-wrap justify-between items-center gap-4 border-b border-brand-softLavender/20 transition-all duration-500 ${scrolled ? 'opacity-0 -translate-y-full absolute invisible' : 'opacity-100 translate-y-0 relative'}`}>
         <Link to="/" className="flex items-center gap-3 group">
           <motion.div 
@@ -104,24 +110,24 @@ export default function PublicLayout() {
           </motion.div>
           <div>
             <h1 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-brand-deepPlum to-brand-royalPurple bg-clip-text text-transparent">
-              Dhaka Ideal Academy
+              {t('dashboard.ideal_academy')}
             </h1>
-            <p className="text-xs text-brand-royalPurple font-medium">Committed to Excellence</p>
+            <p className="text-xs text-brand-royalPurple font-medium">{t('public.committed_excellence')}</p>
           </div>
         </Link>
         <div className="hidden md:flex gap-8 text-sm text-gray-600">
           <div className="flex items-center gap-2">
             <FaMapMarkerAlt className="text-brand-tealCyan text-lg" />
             <div>
-              <p className="font-bold text-brand-deepPlum">Campus</p>
-              <p>Dhanmondi, Dhaka</p>
+              <p className="font-bold text-brand-deepPlum">{t('public.campus')}</p>
+              <p>{t('public.campus_location')}</p>
             </div>
           </div>
           <div className="flex items-center gap-2 border-l border-gray-200 pl-6">
             <FaPhoneAlt className="text-brand-tealCyan text-lg" />
             <div>
-              <p className="font-bold text-brand-deepPlum">Admission</p>
-              <p>+880 1712-345678</p>
+              <p className="font-bold text-brand-deepPlum">{t('public.admission_info')}</p>
+              <p>{t('public.admission_phone')}</p>
             </div>
           </div>
         </div>
@@ -173,11 +179,11 @@ export default function PublicLayout() {
                   <span className="text-brand-deepPlum font-black text-xl">DIA</span>
                 </div>
                 <h2 className="text-2xl font-bold bg-gradient-to-r from-white to-brand-softLavender bg-clip-text text-transparent">
-                  Dhaka Ideal Academy
+                  {t('dashboard.ideal_academy')}
                 </h2>
               </div>
               <p className="text-gray-300 text-sm leading-relaxed mb-6">
-                Empowering students to reach their full potential through modern education, deep care, and moral values.
+                {t('public.footer_about_text')}
               </p>
               <div className="flex gap-4">
                 {socialLinks.map((social, idx) => (
@@ -189,14 +195,14 @@ export default function PublicLayout() {
             </div>
             <div>
               <h3 className="text-xl font-bold mb-6 relative inline-block after:content-[''] after:absolute after:-bottom-2 after:left-0 after:w-12 after:h-1 after:bg-brand-tealCyan after:rounded-full">
-                Quick Links
+                {t('footer.quick_links')}
               </h3>
               <ul className="space-y-3">
-                {['Home', 'About Us', 'Notice Board', 'Events', 'Careers', 'Contact Us'].map((item) => (
-                  <li key={item}>
-                    <Link to={item === 'Home' ? '/' : `/${item.toLowerCase().replace(/\s+/g, '-')}`} className="group flex items-center gap-2 text-gray-300 hover:text-white transition-colors">
+                {footerQuickLinks.map((item) => (
+                  <li key={item.name}>
+                    <Link to={item.path} className="group flex items-center gap-2 text-gray-300 hover:text-white transition-colors">
                       <span className="w-0 group-hover:w-2 h-0.5 bg-brand-tealCyan transition-all duration-300"></span>
-                      <span className="group-hover:translate-x-1 transition-transform">{item}</span>
+                      <span className="group-hover:translate-x-1 transition-transform">{item.name}</span>
                     </Link>
                   </li>
                 ))}
@@ -204,36 +210,36 @@ export default function PublicLayout() {
             </div>
             <div>
               <h3 className="text-xl font-bold mb-6 relative inline-block after:content-[''] after:absolute after:-bottom-2 after:left-0 after:w-12 after:h-1 after:bg-brand-tealCyan after:rounded-full">
-                Contact Info
+                {t('footer.contact_info')}
               </h3>
               <ul className="space-y-4">
-                <li className="flex gap-3 group"><FaMapMarkerAlt className="text-brand-tealCyan text-lg mt-1 group-hover:scale-110 transition" /><span className="text-gray-300 text-sm">House #12, Road #4, Dhanmondi, Dhaka-1209</span></li>
-                <li className="flex gap-3 group"><FaEnvelope className="text-brand-tealCyan group-hover:scale-110 transition" /><a href="mailto:info@dhakaideal.edu.bd" className="text-gray-300 hover:text-white text-sm">info@dhakaideal.edu.bd</a></li>
-                <li className="flex gap-3 group"><FaPhoneAlt className="text-brand-tealCyan group-hover:scale-110 transition" /><a href="tel:+8801712345678" className="text-gray-300 hover:text-white text-sm">+880 1712-345678</a></li>
-                <li className="flex gap-3 group"><FaClock className="text-brand-tealCyan group-hover:scale-110 transition" /><span className="text-gray-300 text-sm">Sat - Thu: 8:00 AM – 4:00 PM</span></li>
+                <li className="flex gap-3 group"><FaMapMarkerAlt className="text-brand-tealCyan text-lg mt-1 group-hover:scale-110 transition" /><span className="text-gray-300 text-sm">{t('public.footer_address')}</span></li>
+                <li className="flex gap-3 group"><FaEnvelope className="text-brand-tealCyan group-hover:scale-110 transition" /><a href="mailto:info@dhakaideal.edu.bd" className="text-gray-300 hover:text-white text-sm">{t('footer.email')}</a></li>
+                <li className="flex gap-3 group"><FaPhoneAlt className="text-brand-tealCyan group-hover:scale-110 transition" /><a href="tel:+8801712345678" className="text-gray-300 hover:text-white text-sm">{t('footer.phone')}</a></li>
+                <li className="flex gap-3 group"><FaClock className="text-brand-tealCyan group-hover:scale-110 transition" /><span className="text-gray-300 text-sm">{t('footer.hours')}</span></li>
               </ul>
             </div>
             <div>
               <h3 className="text-xl font-bold mb-6 relative inline-block after:content-[''] after:absolute after:-bottom-2 after:left-0 after:w-12 after:h-1 after:bg-brand-tealCyan after:rounded-full">
-                Newsletter
+                {t('footer.newsletter')}
               </h3>
-              <p className="text-gray-300 text-sm mb-4">Subscribe for latest campus updates.</p>
+              <p className="text-gray-300 text-sm mb-4">{t('footer.newsletter_text')}</p>
               <form className="relative mb-4" onSubmit={(e) => e.preventDefault()}>
-                <input type="email" placeholder="Your Email" className="w-full px-4 py-3 pr-12 rounded-xl bg-white/10 border border-white/20 focus:border-brand-tealCyan focus:outline-none text-white placeholder:text-gray-400 transition-all" required />
+                <input type="email" placeholder={t('public.your_email')} className="w-full px-4 py-3 pr-12 rounded-xl bg-white/10 border border-white/20 focus:border-brand-tealCyan focus:outline-none text-white placeholder:text-gray-400 transition-all" required />
                 <button type="submit" className="absolute right-2 top-1/2 -translate-y-1/2 bg-brand-tealCyan text-brand-deepPlum p-2 rounded-lg hover:bg-brand-mintGreen transition-colors">
                   <FaPaperPlane />
                 </button>
               </form>
-              <p className="text-xs text-gray-400">We don't spam, only send important updates.</p>
+              <p className="text-xs text-gray-400">{t('public.no_spam')}</p>
             </div>
           </div>
           <div className="pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-3 text-xs text-gray-400">
-            <p>© {new Date().getFullYear()} Dhaka Ideal Academy. All rights reserved.</p>
+            <p>© {new Date().getFullYear()} {t('dashboard.ideal_academy')}. {t('footer.copyright')}</p>
             <div className="flex gap-6">
-              <Link to="/privacy" className="hover:text-brand-tealCyan transition">Privacy Policy</Link>
-              <Link to="/terms" className="hover:text-brand-tealCyan transition">Terms of Service</Link>
+              <Link to="/privacy" className="hover:text-brand-tealCyan transition">{t('public.privacy_policy')}</Link>
+              <Link to="/terms" className="hover:text-brand-tealCyan transition">{t('public.terms_of_service')}</Link>
             </div>
-            <p className="text-gray-500">Developed with ❤️ by Mahmudul Hasan Moon</p>
+            <p className="text-gray-500">{t('footer.developed')}</p>
           </div>
         </div>
         <div className="absolute -bottom-32 -right-32 w-96 h-96 bg-brand-royalPurple/20 rounded-full blur-3xl"></div>

@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../store/useAuthStore';
 import api from '../api/axios';
 import { Menu, X, LogOut, ChevronLeft, ChevronRight } from 'lucide-react';
 
 export default function DashboardLayout() {
+  const { t } = useTranslation();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [userName, setUserName] = useState('');
@@ -37,88 +39,95 @@ export default function DashboardLayout() {
   // Categorized menu items for ADMIN
   const adminMenuCategories = [
     {
-      name: 'Overview',
-      items: [{ name: 'Dashboard', path: '/admin/dashboard', icon: '📊' }],
+      nameKey: 'sidebar.overview',
+      items: [{ nameKey: 'sidebar.dashboard', path: '/admin/dashboard', icon: '📊' }],
     },
     {
-      name: 'People Management',
+      nameKey: 'sidebar.people_management',
       items: [
-        { name: 'Students', path: '/admin/students', icon: '👨‍🎓' },
-        { name: 'Teachers', path: '/admin/teachers', icon: '👩‍🏫' },
-        { name: 'Staffs', path: '/admin/staffs', icon: '👔' },
-        { name: 'Staff Setup', path: '/admin/staff-setup', icon: '⚙️' },
-        { name: 'Teacher Attendance', path: '/admin/teacher-attendance', icon: '✅' },
+        { nameKey: 'sidebar.students', path: '/admin/students', icon: '👨‍🎓' },
+        { nameKey: 'sidebar.teachers', path: '/admin/teachers', icon: '👩‍🏫' },
+        { nameKey: 'sidebar.staffs', path: '/admin/staffs', icon: '👔' },
+        { nameKey: 'sidebar.staff_setup', path: '/admin/staff-setup', icon: '⚙️' },
+        { nameKey: 'sidebar.teacher_attendance', path: '/admin/teacher-attendance', icon: '✅' },
       ],
     },
     {
-      name: 'HR & Payroll',
+      nameKey: 'sidebar.hr_payroll',
       items: [
-        { name: 'Payroll', path: '/admin/payroll', icon: '💵' },
+        { nameKey: 'sidebar.payroll', path: '/admin/payroll', icon: '💵' },
       ],
     },
     {
-      name: 'Fees & Finance',
+      nameKey: 'sidebar.fees_finance',
       items: [
-        { name: 'Fee Categories', path: '/admin/fee-categories', icon: '📋' },
-        { name: 'Collect Fee', path: '/admin/collect-fee', icon: '💰' },
-        { name: 'Fee Reports', path: '/admin/fee-reports', icon: '📈' },
-        { name: 'Accounts', path: '/admin/accounts', icon: '🏦' },
+        { nameKey: 'sidebar.fee_categories', path: '/admin/fee-categories', icon: '📋' },
+        { nameKey: 'sidebar.collect_fee', path: '/admin/collect-fee', icon: '💰' },
+        { nameKey: 'sidebar.fee_reports', path: '/admin/fee-reports', icon: '📈' },
+        { nameKey: 'sidebar.accounts', path: '/admin/accounts', icon: '🏦' },
       ],
     },
     {
-      name: 'Examinations',
+      nameKey: 'sidebar.examinations',
       items: [
-        { name: 'Manage Exams', path: '/admin/exams', icon: '📝' },
-        { name: 'Exam Routine', path: '/admin/exam-routine', icon: '📅' },
-        { name: 'Marks Entry', path: '/admin/marks-entry', icon: '✅' },
-        { name: 'Grades Setup', path: '/admin/grades-setup', icon: '⭐' },
-        { name: 'Result Sheet', path: '/admin/result-sheet', icon: '📊' },
-        { name: 'Class Tests', path: '/admin/class-tests', icon: '📝' },
-        { name: 'Admit Cards', path: '/admin/admit-cards', icon: '🎫' },
+        { nameKey: 'sidebar.manage_exams', path: '/admin/exams', icon: '📝' },
+        { nameKey: 'sidebar.exam_routine', path: '/admin/exam-routine', icon: '📅' },
+        { nameKey: 'sidebar.class_routine', path: '/admin/class-routine', icon: '🗓️' },
+        { nameKey: 'sidebar.marks_entry', path: '/admin/marks-entry', icon: '✅' },
+        { nameKey: 'sidebar.grades_setup', path: '/admin/grades-setup', icon: '⭐' },
+        { nameKey: 'sidebar.result_sheet', path: '/admin/result-sheet', icon: '📊' },
+        { nameKey: 'sidebar.class_tests', path: '/admin/class-tests', icon: '📝' },
+        { nameKey: 'sidebar.admit_cards', path: '/admin/admit-cards', icon: '🎫' },
       ],
     },
     {
-      name: 'Communication',
-      items: [{ name: 'SMS Gateway', path: '/admin/sms-gateway', icon: '💬' }],
+      nameKey: 'sidebar.communication',
+      items: [{ nameKey: 'sidebar.sms_gateway', path: '/admin/sms-gateway', icon: '💬' }],
     },
     {
-      name: 'Attendance',
+      nameKey: 'sidebar.attendance',
       items: [
-        { name: 'Attendance Mgmt', path: '/admin/attendance-management', icon: '📋' },
+        { nameKey: 'sidebar.attendance_mgmt', path: '/admin/attendance-management', icon: '📋' },
       ],
     },
     {
-      name: 'Security',
+      nameKey: 'sidebar.security',
       items: [
-        { name: 'Password Mgmt', path: '/admin/password-management', icon: '🔐' },
+        { nameKey: 'sidebar.password_mgmt', path: '/admin/password-management', icon: '🔐' },
       ],
     },
     {
-      name: 'Operations',
+      nameKey: 'sidebar.operations',
       items: [
-        { name: 'Inventory', path: '/admin/inventory', icon: '📦' },
-        { name: 'Recruitment', path: '/admin/recruitment', icon: '💼' },
+        { nameKey: 'sidebar.inventory', path: '/admin/inventory', icon: '📦' },
+        { nameKey: 'sidebar.recruitment', path: '/admin/recruitment', icon: '💼' },
       ],
     },
   ];
 
   const teacherMenuItems = [
-    { name: 'My Classes', path: '/teacher/dashboard', icon: '📅' },
-    { name: 'Attendance', path: '/teacher/attendance', icon: '✅' },
-    { name: 'Results', path: '/teacher/results', icon: '📝' },
+    { nameKey: 'sidebar.my_classes', path: '/teacher/dashboard', icon: '📅' },
+    { nameKey: 'sidebar.attendance_short', path: '/teacher/attendance', icon: '✅' },
+    { nameKey: 'sidebar.results', path: '/teacher/results', icon: '📝' },
+    { nameKey: 'sidebar.parent_messages', path: '/teacher/messages', icon: '💬' },
   ];
 
+  const [viewMode, setViewMode] = useState('default');
+
   const studentMenuItems = [
-    { name: 'My Routine', path: '/student/dashboard', icon: '📅' },
-    { name: 'Results', path: '/student/results', icon: '📋' },
+    { nameKey: 'sidebar.my_routine', path: '/student/dashboard', icon: '📅' },
+    { nameKey: 'sidebar.results', path: '/student/results', icon: '📋' },
   ];
 
   const parentMenuItems = [
-    { name: 'Child Profile', path: '/parent/dashboard', icon: '👦' },
-    { name: 'Fees Status', path: '/parent/fees', icon: '💳' },
+    { nameKey: 'sidebar.dashboard', path: '/parent/dashboard', icon: '🏠' },
+    { nameKey: 'sidebar.child_profile', path: '/parent/profile', icon: '👦' },
+    { nameKey: 'sidebar.attendance_short', path: '/parent/attendance', icon: '📊' },
+    { nameKey: 'sidebar.exam_results', path: '/parent/results', icon: '📝' },
+    { nameKey: 'sidebar.fees_status', path: '/parent/fees', icon: '💳' },
+    { nameKey: 'sidebar.messages', path: '/parent/messages', icon: '📬' },
   ];
 
-  // Determine which menu to render
   let menuCategories = [];
   let simpleMenu = [];
   if (userRole === 'ADMIN') {
@@ -126,19 +135,21 @@ export default function DashboardLayout() {
   } else if (userRole === 'TEACHER') {
     simpleMenu = teacherMenuItems;
   } else if (userRole === 'STUDENT') {
-    simpleMenu = studentMenuItems;
+    if (viewMode === 'parent') {
+      simpleMenu = parentMenuItems;
+    } else {
+      simpleMenu = studentMenuItems;
+    }
   } else if (userRole === 'PARENT') {
     simpleMenu = parentMenuItems;
   }
 
-  // Close mobile menu on route change
   useEffect(() => {
     setIsMobileMenuOpen(false);
   }, [location.pathname]);
 
   const sidebarWidth = isSidebarOpen ? 'w-64' : 'w-20';
 
-  // Render sidebar content (shared between desktop and mobile drawer)
   const renderSidebarContent = () => (
     <>
       <div className="flex items-center justify-between p-4 border-b border-white/10">
@@ -146,7 +157,7 @@ export default function DashboardLayout() {
           <div className="w-8 h-8 bg-gradient-to-br from-brand-tealCyan to-brand-mintGreen rounded-lg flex items-center justify-center">
             <span className="text-brand-deepPlum font-bold text-sm">DIA</span>
           </div>
-          {isSidebarOpen && <span className="font-semibold text-md">Ideal Academy</span>}
+          {isSidebarOpen && <span className="font-semibold text-md">{t('dashboard.ideal_academy')}</span>}
         </Link>
         {isSidebarOpen && (
           <button onClick={() => setIsSidebarOpen(false)} className="p-1 rounded-full hover:bg-white/10">
@@ -162,52 +173,50 @@ export default function DashboardLayout() {
 
       <nav className="flex-1 overflow-y-auto py-4 px-2 space-y-4">
         {menuCategories.length > 0 ? (
-          // Admin categorized menu
           menuCategories.map((category, idx) => (
             <div key={idx} className="space-y-1">
               {isSidebarOpen && (
                 <div className="text-[10px] uppercase tracking-wider text-gray-400 px-3 pt-2 pb-1 font-semibold">
-                  {category.name}
+                  {t(category.nameKey)}
                 </div>
               )}
               {category.items.map((item) => {
                 const isActive = location.pathname === item.path;
                 return (
                   <Link
-                    key={item.name}
+                    key={item.nameKey}
                     to={item.path}
                     className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
                       isActive
                         ? 'bg-brand-tealCyan text-brand-deepPlum font-medium shadow-sm'
                         : 'text-gray-300 hover:bg-white/10 hover:text-white'
                     }`}
-                    title={!isSidebarOpen ? item.name : ''}
+                    title={!isSidebarOpen ? t(item.nameKey) : ''}
                   >
                     <span className="text-base">{item.icon}</span>
-                    {isSidebarOpen && <span>{item.name}</span>}
+                    {isSidebarOpen && <span>{t(item.nameKey)}</span>}
                   </Link>
                 );
               })}
             </div>
           ))
         ) : (
-          // Non-admin simple menu
           <div className="space-y-1">
             {simpleMenu.map((item) => {
               const isActive = location.pathname === item.path;
               return (
                 <Link
-                  key={item.name}
+                  key={item.nameKey}
                   to={item.path}
                   className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
                     isActive
                       ? 'bg-brand-tealCyan text-brand-deepPlum font-medium shadow-sm'
                       : 'text-gray-300 hover:bg-white/10 hover:text-white'
                   }`}
-                  title={!isSidebarOpen ? item.name : ''}
+                  title={!isSidebarOpen ? t(item.nameKey) : ''}
                 >
                   <span className="text-base">{item.icon}</span>
-                  {isSidebarOpen && <span>{item.name}</span>}
+                  {isSidebarOpen && <span>{t(item.nameKey)}</span>}
                 </Link>
               );
             })}
@@ -217,7 +226,7 @@ export default function DashboardLayout() {
 
       {isSidebarOpen && (
         <div className="p-4 border-t border-white/10 text-center text-xs text-gray-500">
-          <p>Developed by Mahmudul Hasan Moon</p>
+          <p>{t('dashboard.developed')}</p>
         </div>
       )}
     </>
@@ -225,7 +234,7 @@ export default function DashboardLayout() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Mobile Header (visible only on mobile) */}
+      {/* Mobile Header */}
       <div className="lg:hidden sticky top-0 z-30 bg-white shadow-md px-4 py-2 flex items-center justify-between">
         <button onClick={() => setIsMobileMenuOpen(true)} className="p-1 rounded-lg hover:bg-gray-100">
           <Menu className="w-5 h-5 text-brand-deepPlum" />
@@ -234,7 +243,7 @@ export default function DashboardLayout() {
           <div className="w-7 h-7 bg-gradient-to-br from-brand-tealCyan to-brand-mintGreen rounded-lg flex items-center justify-center">
             <span className="text-brand-deepPlum font-bold text-xs">DIA</span>
           </div>
-          <span className="font-medium text-brand-deepPlum text-sm">Ideal Academy</span>
+          <span className="font-medium text-brand-deepPlum text-sm">{t('dashboard.ideal_academy')}</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="text-right">
@@ -257,7 +266,7 @@ export default function DashboardLayout() {
                 <div className="w-8 h-8 bg-gradient-to-br from-brand-tealCyan to-brand-mintGreen rounded-lg flex items-center justify-center">
                   <span className="text-brand-deepPlum font-bold text-sm">DIA</span>
                 </div>
-                <span className="font-medium text-sm">Ideal Academy</span>
+                <span className="font-medium text-sm">{t('dashboard.ideal_academy')}</span>
               </Link>
               <button onClick={() => setIsMobileMenuOpen(false)} className="p-1 rounded-full hover:bg-white/10">
                 <X className="w-4 h-4" />
@@ -268,13 +277,13 @@ export default function DashboardLayout() {
                 menuCategories.map((category, idx) => (
                   <div key={idx} className="space-y-1">
                     <div className="text-[10px] uppercase tracking-wider text-gray-400 px-3 pt-2 pb-1 font-semibold">
-                      {category.name}
+                      {t(category.nameKey)}
                     </div>
                     {category.items.map((item) => {
                       const isActive = location.pathname === item.path;
                       return (
                         <Link
-                          key={item.name}
+                          key={item.nameKey}
                           to={item.path}
                           className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
                             isActive
@@ -283,7 +292,7 @@ export default function DashboardLayout() {
                           }`}
                         >
                           <span className="text-base">{item.icon}</span>
-                          <span>{item.name}</span>
+                          <span>{t(item.nameKey)}</span>
                         </Link>
                       );
                     })}
@@ -295,7 +304,7 @@ export default function DashboardLayout() {
                     const isActive = location.pathname === item.path;
                     return (
                       <Link
-                        key={item.name}
+                        key={item.nameKey}
                         to={item.path}
                         className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
                           isActive
@@ -304,7 +313,7 @@ export default function DashboardLayout() {
                         }`}
                       >
                         <span className="text-base">{item.icon}</span>
-                        <span>{item.name}</span>
+                        <span>{t(item.nameKey)}</span>
                       </Link>
                     );
                   })}
@@ -312,7 +321,7 @@ export default function DashboardLayout() {
               )}
             </nav>
             <div className="p-4 border-t border-white/10 text-center text-xs text-gray-400">
-              <p>Developed by Mahmudul Hasan Moon</p>
+              <p>{t('dashboard.developed')}</p>
             </div>
           </aside>
         </>
@@ -320,21 +329,31 @@ export default function DashboardLayout() {
 
       {/* Desktop Layout */}
       <div className="hidden lg:flex h-screen overflow-hidden">
-        {/* Sidebar */}
         <aside className={`${sidebarWidth} bg-brand-deepPlum text-white transition-all duration-300 flex flex-col shadow-md`}>
           {renderSidebarContent()}
         </aside>
 
-        {/* Main Content */}
         <div className="flex-1 flex flex-col overflow-hidden">
           <header className="h-12 bg-white shadow-sm flex items-center justify-between px-5 z-10 shrink-0 border-b border-gray-100">
             <div className="flex items-center gap-2">
               <div className="w-7 h-7 bg-gradient-to-br from-brand-tealCyan to-brand-mintGreen rounded-lg flex items-center justify-center">
                 <span className="text-brand-deepPlum font-bold text-xs">DIA</span>
               </div>
-              <span className="text-sm font-medium text-brand-deepPlum hidden md:inline">Dashboard</span>
+              <span className="text-sm font-medium text-brand-deepPlum hidden md:inline">{t('dashboard.dashboard')}</span>
             </div>
             <div className="flex items-center gap-3">
+              {userRole === 'STUDENT' && (
+                <button
+                  onClick={() => setViewMode(viewMode === 'parent' ? 'default' : 'parent')}
+                  className={`text-xs px-3 py-1.5 rounded-lg font-bold transition-colors ${
+                    viewMode === 'parent'
+                      ? 'bg-brand-royalPurple text-white'
+                      : 'bg-brand-softLavender/20 text-brand-royalPurple border border-brand-royalPurple'
+                  }`}
+                >
+                  {viewMode === 'parent' ? `👪 ${t('dashboard.parent_view')}` : `👪 ${t('dashboard.switch_to_parent')}`}
+                </button>
+              )}
               <div className="text-right">
                 <p className="text-xs font-medium text-gray-700">{userName}</p>
                 <p className="text-[10px] text-gray-400">{displayRole}</p>
@@ -344,7 +363,7 @@ export default function DashboardLayout() {
                 className="flex items-center gap-1 text-xs bg-red-50 text-red-600 hover:bg-red-100 px-3 py-1.5 rounded-lg font-medium transition-colors"
               >
                 <LogOut className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Logout</span>
+                <span className="hidden sm:inline">{t('dashboard.logout')}</span>
               </button>
             </div>
           </header>
@@ -355,7 +374,6 @@ export default function DashboardLayout() {
         </div>
       </div>
 
-      {/* Fallback for mobile (already handled above, but keep for safety) */}
       <div className="lg:hidden">
         <main className="p-4 bg-gray-50 min-h-screen">
           <Outlet />

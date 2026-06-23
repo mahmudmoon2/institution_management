@@ -111,21 +111,34 @@ def teacher_id_card_pdf(request, teacher_id):
 
 # 10. Live Class History API for Admin Dashboard
 from django.db.models import Max
+import datetime as dt
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def live_class_history(request):
-    """Admin dashboard-এ দেখানোর জন্য সাম্প্রতিক ক্লাস হিস্ট্রি"""
-    # Get today's class histories plus recent ones
-    class_histories = ClassHistory.objects.select_related('teacher', 'subject', 'class_level', 'section').order_by('-date', '-start_time')[:30]
+    """Admin dashboard-এ দেখানোর জন্য আজকের ক্লাস হিস্ট্রি (ডিফল্ট) অথবা নির্দিষ্ট তারিখের"""
+    # Get date from query params, default to today
+    date_str = request.query_params.get('date', None)
+    if date_str:
+        try:
+            filter_date = dt.datetime.strptime(date_str, '%Y-%m-%d').date()
+        except ValueError:
+            return Response({'error': 'Invalid date format. Use YYYY-MM-DD.'}, status=400)
+    else:
+        filter_date = dt.date.today()
+    
+    class_histories = ClassHistory.objects.select_related(
+        'teacher', 'subject', 'class_level', 'section'
+    ).filter(date=filter_date).order_by('start_time')
+    
+    now = dt.datetime.now().time()
+    today = dt.date.today()
     
     data = []
     for ch in class_histories:
-        # Determine status: Running / Ended
-        import datetime as dt
-        now = dt.datetime.now().time()
+        # Determine status: Running only if it's today and current time is between start & end
         status = 'Ended'
-        if ch.end_time and ch.start_time and ch.date == dt.date.today():
+        if ch.end_time and ch.start_time and ch.date == today:
             if ch.start_time <= now <= ch.end_time:
                 status = 'Running'
         

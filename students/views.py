@@ -93,16 +93,28 @@ def dashboard_stats(request):
 @permission_classes([IsAuthenticated])
 def current_user_info(request):
     user = request.user
-    name = user.get_full_name() or user.username  # fallback to username
+    name = user.get_full_name().strip() or user.username  # fallback to username
     
-    if user.role == 'TEACHER' and hasattr(user, 'teacher_profile'):
-        name = user.teacher_profile.name
+    if user.role == 'TEACHER':
+        from teachers.models import Teacher
+        teacher = Teacher.objects.filter(user=user).first()
+        if teacher:
+            name = teacher.name
     elif user.role == 'STUDENT' and hasattr(user, 'student_profile'):
         name = user.student_profile.name
     elif user.role == 'ADMIN':
         name = user.get_full_name().strip() or user.first_name or user.username
-    elif user.role == 'STAFF' and hasattr(user, 'staff_profile'):
-        name = user.staff_profile.name
+    elif user.role == 'STAFF':
+        from staffs.models import Staff
+        staff = Staff.objects.filter(user=user).first()
+        if staff:
+            name = staff.name
+    elif user.role == 'PARENT':
+        # Parent username = child's student_id, resolve to guardian name
+        from students.models import Student
+        child = Student.objects.filter(student_id=user.username, is_active=True).first()
+        if child:
+            name = child.guardian_name or child.name
     
     role_display = user.get_role_display()
     return Response({"name": name, "role": role_display})

@@ -61,6 +61,20 @@ export default function AddStudent() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  const handleClassChange = (e) => {
+    const classId = e.target.value;
+    setFormData({ ...formData, class_level: classId, section: '' });
+    if (classId) {
+      api.get(`/academics/sections/?class=${classId}`)
+        .then(res => setSections(res.data))
+        .catch(() => {});
+    } else {
+      api.get('/academics/sections/')
+        .then(res => setSections(res.data))
+        .catch(() => {});
+    }
+  };
+
   const handleFileChange = (e) => {
     setFiles({ ...files, [e.target.name]: e.target.files[0] });
   };
@@ -159,16 +173,16 @@ export default function AddStudent() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             <div>
               <label className={labelClass}>Class Level *</label>
-              <select name="class_level" required value={formData.class_level} onChange={handleChange} className={inputClass}>
+              <select name="class_level" required value={formData.class_level} onChange={handleClassChange} className={inputClass}>
                 <option value="">Select Class</option>
                 {classes.map(cls => <option key={cls.id} value={cls.id}>{cls.name}</option>)}
               </select>
             </div>
             <div>
               <label className={labelClass}>Section *</label>
-              <select name="section" required value={formData.section} onChange={handleChange} className={inputClass}>
+              <select name="section" required value={formData.section} onChange={handleChange} className={inputClass} disabled={!formData.class_level}>
                 <option value="">Select Section</option>
-                {sections.map(sec => <option key={sec.id} value={sec.id}>{sec.name}</option>)}
+                {sections.map(sec => <option key={sec.id} value={sec.id}>{sec.name} ({sec.class_level_name})</option>)}
               </select>
             </div>
             <div>

@@ -31,3 +31,38 @@ class Subject(models.Model):
 
     def __str__(self):
         return f"{self.name} ({self.code})"
+
+
+# ===================== WEEKLY CLASS ROUTINE =====================
+class ClassRoutine(models.Model):
+    """Stores weekly class routine for each class & section"""
+    DAY_CHOICES = [
+        ('Saturday', 'Saturday'),
+        ('Sunday', 'Sunday'),
+        ('Monday', 'Monday'),
+        ('Tuesday', 'Tuesday'),
+        ('Wednesday', 'Wednesday'),
+        ('Thursday', 'Thursday'),
+        ('Friday', 'Friday'),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    class_level = models.ForeignKey(ClassLevel, on_delete=models.CASCADE, related_name='routines')
+    section = models.ForeignKey(Section, on_delete=models.CASCADE, related_name='routines')
+    day = models.CharField(max_length=20, choices=DAY_CHOICES)
+    period = models.PositiveIntegerField(help_text='Period number (1, 2, 3...)')
+    subject = models.ForeignKey(Subject, on_delete=models.CASCADE, related_name='routines')
+    teacher = models.ForeignKey('teachers.Teacher', on_delete=models.SET_NULL, null=True, blank=True, related_name='routines')
+    room_number = models.CharField(max_length=50, blank=True, null=True)
+    start_time = models.TimeField()
+    end_time = models.TimeField()
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['class_level', 'section', 'day', 'period']
+        unique_together = ('class_level', 'section', 'day', 'period')
+
+    def __str__(self):
+        return f"{self.class_level.name} {self.section.name} | {self.day} P{self.period} - {self.subject.name}"
