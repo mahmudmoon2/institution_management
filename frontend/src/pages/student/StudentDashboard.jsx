@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
+import { useThemeStore } from '../../store/useThemeStore';
 import api from '../../api/axios';
 
 const DAYS = ['Saturday', 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
@@ -11,6 +12,8 @@ const DAY_BENGALI = {
 
 export default function StudentDashboard() {
   const { t } = useTranslation();
+  const { theme } = useThemeStore();
+  const isDark = theme === 'dark';
   const [studentInfo, setStudentInfo] = useState(null);
   const [studentProfile, setStudentProfile] = useState(null);
   const [notices, setNotices] = useState([]);
@@ -48,7 +51,7 @@ export default function StudentDashboard() {
   const dateString = currentTime.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
   const todayDay = currentTime.toLocaleDateString('en-US', { weekday: 'long' });
 
-  if (isLoading) return <div className="p-10 text-center font-bold text-brand-deepPlum">{t('common.loading')}</div>;
+  if (isLoading) return <div className={`p-10 text-center font-bold ${isDark ? 'text-slate-300' : 'text-brand-deepPlum'}`}>{t('common.loading')}</div>;
 
   return (
     <div className="space-y-6 pb-10">
@@ -73,19 +76,19 @@ export default function StudentDashboard() {
       </motion.div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className={`p-6 rounded-2xl shadow-sm flex items-center gap-4 ${isDark ? 'bg-white/[0.03] border border-white/[0.06]' : 'bg-white border border-gray-100'}`}>
           <div className="w-14 h-14 bg-brand-mintGreen/20 text-[#0e5c3c] rounded-2xl flex items-center justify-center text-2xl">✅</div>
           <div>
-            <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-0.5">{t('student.attendance')}</p>
-            <p className="text-2xl font-bold text-brand-deepPlum">{attendanceStats ? `${attendanceStats.percentage}%` : 'N/A'}</p>
-            {attendanceStats && <p className="text-xs text-gray-400">{attendanceStats.present}/{attendanceStats.total} {t('student.days')}</p>}
+            <p className={`text-xs font-bold uppercase tracking-wider mb-0.5 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{t('student.attendance')}</p>
+            <p className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-brand-deepPlum'}`}>{attendanceStats ? `${attendanceStats.percentage}%` : 'N/A'}</p>
+            {attendanceStats && <p className={`text-xs ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>{attendanceStats.present}/{attendanceStats.total} {t('student.days')}</p>}
           </div>
         </motion.div>
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className={`p-6 rounded-2xl shadow-sm flex items-center gap-4 ${isDark ? 'bg-white/[0.03] border border-white/[0.06]' : 'bg-white border border-gray-100'}`}>
           <div className="w-14 h-14 bg-orange-50 text-orange-600 rounded-2xl flex items-center justify-center text-2xl">📝</div>
           <div>
-            <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-0.5">{t('student.upcoming_exams')}</p>
-            <p className="text-2xl font-bold text-brand-deepPlum">{upcomingExams}</p>
+            <p className={`text-xs font-bold uppercase tracking-wider mb-0.5 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{t('student.upcoming_exams')}</p>
+            <p className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-brand-deepPlum'}`}>{upcomingExams}</p>
           </div>
         </motion.div>
       </div>

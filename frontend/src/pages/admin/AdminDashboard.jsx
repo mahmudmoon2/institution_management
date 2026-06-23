@@ -6,6 +6,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid 
 } from 'recharts';
 import { Link } from 'react-router-dom';
+import { useThemeStore } from '../../store/useThemeStore';
 import api from '../../api/axios';
 
 const getImageUrl = (path) => {
@@ -100,6 +101,8 @@ const AnalogClock = ({ time }) => {
 
 export default function AdminDashboard() {
   const { t } = useTranslation();
+  const { theme } = useThemeStore();
+  const isDark = theme === 'dark';
   const [adminName, setAdminName] = useState('');
   const [stats, setStats] = useState({ totalStudents: 0, activeStudents: 0, newAdmissions: 0, totalTeachers: 0 });
   const [feeStats, setFeeStats] = useState({ billed: 0, collected: 0, due: 0 });
@@ -272,7 +275,7 @@ export default function AdminDashboard() {
   const weekday = currentTime.toLocaleDateString('en-US', { weekday: 'long' });
   const greeting = (() => { const hour = currentTime.getHours(); if (hour < 12) return t('common.good_morning'); if (hour < 18) return t('common.good_afternoon'); return t('common.good_evening'); })();
 
-  if (isLoading) return <div className="min-h-screen bg-[#F4F7FE] flex items-center justify-center text-brand-deepPlum font-bold text-xl">{t('admin.loading_dashboard')}</div>;
+  if (isLoading) return <div className={`min-h-screen flex items-center justify-center font-bold text-xl ${isDark ? 'bg-[#0c0a21] text-slate-300' : 'bg-[#F4F7FE] text-brand-deepPlum'}`}>{t('admin.loading_dashboard')}</div>;
 
   const feeChartData = [
     { name: 'Total Billed', amount: feeStats.billed, fill: '#3B82F6' },
@@ -281,7 +284,7 @@ export default function AdminDashboard() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#F4F7FE] p-4 sm:p-6 lg:p-8 space-y-8 font-sans pb-16">
+    <div className={`min-h-screen p-4 sm:p-6 lg:p-8 space-y-8 font-sans pb-16 ${isDark ? 'bg-transparent' : 'bg-[#F4F7FE]'}`}>
       
       {/* ========== PREMIUM HEADER ========== */}
       <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="relative bg-gradient-to-r from-brand-deepPlum via-[#2E1B4D] to-brand-royalPurple rounded-[2rem] p-6 sm:p-8 shadow-2xl overflow-hidden flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8">
@@ -301,7 +304,7 @@ export default function AdminDashboard() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-              className="w-full pl-12 pr-20 py-3.5 rounded-2xl bg-white/10 border border-white/20 text-white placeholder-white/60 focus:bg-white/25 focus:outline-none focus:border-brand-tealCyan transition-all shadow-inner backdrop-blur-md"
+              className={`w-full pl-12 pr-20 py-3.5 rounded-2xl border transition-all shadow-inner backdrop-blur-md ${isDark ? 'bg-white/10 border-white/20 text-white placeholder-white/60 focus:bg-white/25 focus:outline-none focus:border-brand-tealCyan' : 'bg-white border-gray-200 text-gray-800 placeholder-gray-400 focus:outline-none focus:border-brand-tealCyan focus:ring-1 focus:ring-brand-tealCyan'}`}
             />
             <button
               onClick={handleSearch}
@@ -313,7 +316,7 @@ export default function AdminDashboard() {
           </div>
 
           {searchResult && (
-            <motion.div initial={{opacity:0, y:-10}} animate={{opacity:1, y:0}} onClick={() => setSelectedStudentDetail(searchResult)} className="mt-4 p-3 bg-white text-gray-800 rounded-2xl flex items-center gap-4 cursor-pointer hover:shadow-lg transition-all max-w-md">
+            <motion.div initial={{opacity:0, y:-10}} animate={{opacity:1, y:0}} onClick={() => setSelectedStudentDetail(searchResult)} className={`mt-4 p-3 rounded-2xl flex items-center gap-4 cursor-pointer hover:shadow-lg transition-all max-w-md ${isDark ? 'bg-white/[0.05] border border-white/10 text-slate-200' : 'bg-white text-gray-800'}`}>
               <div className="w-12 h-12 rounded-full bg-brand-tealCyan/20 flex items-center justify-center text-2xl overflow-hidden shrink-0 border border-gray-100">
                 {searchResult.photo ? <img src={getImageUrl(searchResult.photo)} alt="" className="w-full h-full object-cover" /> : '👨‍🎓'}
               </div>
@@ -324,7 +327,7 @@ export default function AdminDashboard() {
               </div>
             </motion.div>
           )}
-          {searchError && <p className="mt-3 text-red-300 text-sm font-medium bg-red-500/20 px-3 py-1 rounded-lg inline-block">{searchError}</p>}
+          {searchError && <p className={`mt-3 text-sm font-medium px-3 py-1 rounded-lg inline-block ${isDark ? 'text-red-300 bg-red-500/20' : 'text-red-600 bg-red-50'}`}>{searchError}</p>}
         </div>
 
         <div className="relative z-10 bg-white/10 backdrop-blur-lg border border-white/20 p-5 rounded-3xl flex items-center gap-5 w-full lg:w-auto shadow-xl">

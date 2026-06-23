@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
+import { useThemeStore } from '../../store/useThemeStore';
 import api from '../../api/axios';
 
 export default function TeacherDashboard() {
   const { t } = useTranslation();
+  const { theme } = useThemeStore();
+  const isDark = theme === 'dark';
   const [classes, setClasses] = useState([]);
   const [sections, setSections] = useState([]);
   const [subjects, setSubjects] = useState([]);
@@ -59,21 +62,21 @@ export default function TeacherDashboard() {
     finally { setIsUpdating(false); }
   };
 
-  const inputClass = "w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:border-brand-tealCyan focus:ring-1 focus:ring-brand-tealCyan text-sm transition-colors bg-gray-50 focus:bg-white";
-  const labelClass = "block text-sm font-semibold text-gray-700 mb-1.5";
+  const inputClass = `w-full px-4 py-2.5 rounded-xl border text-sm transition-colors focus:outline-none focus:border-brand-tealCyan focus:ring-1 focus:ring-brand-tealCyan ${isDark ? 'bg-white/[0.05] border-white/10 text-slate-200 placeholder-slate-500 focus:bg-white/[0.08]' : 'bg-gray-50 border-gray-200 text-gray-700 focus:bg-white'}`;
+  const labelClass = `block text-sm font-semibold mb-1.5 ${isDark ? 'text-slate-300' : 'text-gray-700'}`;
 
   return (
     <div className="space-y-6 relative">
-      <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-        <h1 className="text-2xl font-bold text-brand-deepPlum">{t('teacher.my_classes')}</h1>
-        <p className="text-gray-500 text-sm mt-1">{t('teacher.class_desc')}</p>
+      <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className={`p-6 rounded-2xl shadow-sm border ${isDark ? 'bg-white/[0.03] border-white/[0.06]' : 'bg-white border-gray-100'}`}>
+        <h1 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-brand-deepPlum'}`}>{t('teacher.my_classes')}</h1>
+        <p className={`text-sm mt-1 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{t('teacher.class_desc')}</p>
       </motion.div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="lg:col-span-1 bg-white p-6 rounded-2xl shadow-sm border border-gray-100 h-fit">
-          <h2 className="text-lg font-bold text-brand-royalPurple mb-4 border-b pb-2">{t('teacher.add_record')}</h2>
+        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className={`lg:col-span-1 p-6 rounded-2xl shadow-sm border h-fit ${isDark ? 'bg-white/[0.03] border-white/[0.06]' : 'bg-white border-gray-100'}`}>
+          <h2 className={`text-lg font-bold mb-4 border-b pb-2 ${isDark ? 'text-cyan-400 border-white/[0.06]' : 'text-brand-royalPurple'}`}>{t('teacher.add_record')}</h2>
           {successMsg && <div className="bg-brand-mintGreen/30 text-[#0e5c3c] px-4 py-2 rounded-lg text-sm mb-4 font-semibold">{successMsg}</div>}
-          {errorMsg && <div className="bg-red-50 text-red-600 px-4 py-2 rounded-lg text-sm mb-4 font-semibold">{errorMsg}</div>}
+          {errorMsg && <div className={`px-4 py-2 rounded-lg text-sm mb-4 font-semibold ${isDark ? 'bg-red-500/10 text-red-400' : 'bg-red-50 text-red-600'}`}>{errorMsg}</div>}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div><label className={labelClass}>{t('teacher.date_label')} *</label><input type="date" name="date" required value={formData.date} onChange={handleChange} className={inputClass} /></div>
             <div className="grid grid-cols-2 gap-3">
@@ -92,29 +95,29 @@ export default function TeacherDashboard() {
           </form>
         </motion.div>
 
-        <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="p-6 border-b border-gray-100 flex justify-between items-center"><h2 className="text-lg font-bold text-brand-royalPurple">{t('teacher.class_history')}</h2></div>
+        <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className={`lg:col-span-2 rounded-2xl shadow-sm border overflow-hidden ${isDark ? 'bg-white/[0.03] border-white/[0.06]' : 'bg-white border-gray-100'}`}>
+          <div className={`p-6 border-b flex justify-between items-center ${isDark ? 'border-white/[0.06]' : 'border-gray-100'}`}><h2 className={`text-lg font-bold ${isDark ? 'text-cyan-400' : 'text-brand-royalPurple'}`}>{t('teacher.class_history')}</h2></div>
           <div className="overflow-x-auto max-h-[600px] overflow-y-auto p-2">
             {historyList.length === 0 ? (
-              <div className="text-center py-10 text-gray-500"><span className="text-4xl block mb-2">📋</span>{t('teacher.no_records')}</div>
+              <div className={`text-center py-10 ${isDark ? 'text-slate-500' : 'text-gray-500'}`}><span className="text-4xl block mb-2">📋</span>{t('teacher.no_records')}</div>
             ) : (
               <div className="space-y-3 p-4">
                 {historyList.map((record) => (
-                  <div key={record.id} onClick={() => handleRowClick(record)} className="p-4 border border-gray-100 rounded-xl hover:bg-gray-50 hover:shadow-md hover:border-brand-tealCyan/50 transition-all cursor-pointer flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between group">
+                  <div key={record.id} onClick={() => handleRowClick(record)} className={`p-4 border rounded-xl hover:shadow-md transition-all cursor-pointer flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between group ${isDark ? 'border-white/[0.06] hover:bg-white/[0.05] hover:border-cyan-500/30' : 'border-gray-100 hover:bg-gray-50 hover:border-brand-tealCyan/50'}`}>
                     <div className="flex gap-4 items-center">
-                      <div className="bg-brand-softLavender/20 text-brand-royalPurple p-3 rounded-xl text-center shrink-0 w-16 group-hover:bg-brand-tealCyan/20 transition-colors">
+                      <div className={`p-3 rounded-xl text-center shrink-0 w-16 transition-colors ${isDark ? 'bg-purple-500/15 text-purple-300 group-hover:bg-cyan-500/15' : 'bg-brand-softLavender/20 text-brand-royalPurple group-hover:bg-brand-tealCyan/20'}`}>
                         <span className="block text-lg font-bold">{new Date(record.date).getDate()}</span>
                         <span className="block text-[10px] uppercase font-bold">{new Date(record.date).toLocaleString('default', { month: 'short' })}</span>
                       </div>
                       <div>
-                        <h4 className="font-bold text-brand-deepPlum text-base mb-1 group-hover:text-brand-tealCyan transition-colors">{record.topic_covered}</h4>
-                        <div className="text-xs text-gray-500 flex flex-wrap gap-2 items-center">
-                          <span className="bg-gray-100 px-2 py-1 rounded font-medium">{record.class_level_name} - {record.section_name}</span>
+                        <h4 className={`font-bold text-base mb-1 transition-colors ${isDark ? 'text-slate-200 group-hover:text-cyan-400' : 'text-brand-deepPlum group-hover:text-brand-tealCyan'}`}>{record.topic_covered}</h4>
+                        <div className="text-xs flex flex-wrap gap-2 items-center">
+                          <span className={`px-2 py-1 rounded font-medium ${isDark ? 'bg-white/[0.05] text-slate-300' : 'bg-gray-100 text-gray-500'}`}>{record.class_level_name} - {record.section_name}</span>
                           <span className="font-medium text-brand-tealCyan">{record.subject_name}</span>
                         </div>
                       </div>
                     </div>
-                    <div className="text-right flex items-center gap-3"><span className="text-xs font-semibold text-gray-500 bg-white border border-gray-100 px-3 py-1.5 rounded-lg shrink-0">⏱️ {record.start_time.substring(0,5)} - {record.end_time.substring(0,5)}</span></div>
+                    <div className="text-right flex items-center gap-3"><span className={`text-xs font-semibold px-3 py-1.5 rounded-lg shrink-0 ${isDark ? 'bg-white/[0.04] border border-white/[0.08] text-slate-300' : 'text-gray-500 bg-white border border-gray-100'}`}>⏱️ {record.start_time.substring(0,5)} - {record.end_time.substring(0,5)}</span></div>
                   </div>
                 ))}
               </div>
@@ -126,20 +129,20 @@ export default function TeacherDashboard() {
       <AnimatePresence>
         {selectedRecord && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-brand-deepPlum/40 backdrop-blur-sm">
-            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden border border-gray-100">
-              <div className="bg-[#F5F0FF] p-6 flex justify-between items-center border-b border-gray-100">
-                <h3 className="text-xl font-bold text-brand-deepPlum">{isEditing ? t('teacher.edit_record') : t('teacher.class_details')}</h3>
-                <button onClick={() => setSelectedRecord(null)} className="w-8 h-8 flex items-center justify-center rounded-full bg-white text-gray-500 hover:text-red-500 hover:bg-red-50 transition-colors font-bold">✕</button>
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className={`rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden border ${isDark ? 'bg-[#0d0a27] border-white/[0.06] text-white' : 'bg-white border-gray-100'}`}>
+              <div className={`p-6 flex justify-between items-center border-b ${isDark ? 'bg-white/[0.02] border-white/[0.06]' : 'bg-[#F5F0FF] border-gray-100'}`}>
+                <h3 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-brand-deepPlum'}`}>{isEditing ? t('teacher.edit_record') : t('teacher.class_details')}</h3>
+                <button onClick={() => setSelectedRecord(null)} className={`w-8 h-8 flex items-center justify-center rounded-full transition-colors font-bold ${isDark ? 'bg-white/[0.04] text-slate-400 hover:text-red-400 hover:bg-red-500/10' : 'bg-white text-gray-500 hover:text-red-500 hover:bg-red-50'}`}>✕</button>
               </div>
               <div className="p-6">
                 {!isEditing ? (
                   <div className="space-y-4">
-                    <div className="bg-brand-mintGreen/20 px-4 py-3 rounded-xl border border-brand-mintGreen/40"><p className="text-sm text-[#0e5c3c] font-semibold mb-1">{t('teacher.topic_covered')}</p><p className="text-lg font-bold text-brand-deepPlum">{selectedRecord.topic_covered}</p></div>
+                    <div className={`px-4 py-3 rounded-xl border ${isDark ? 'bg-cyan-500/10 border-cyan-500/20' : 'bg-brand-mintGreen/20 border-brand-mintGreen/40'}`}><p className={`text-sm font-semibold mb-1 ${isDark ? 'text-cyan-300' : 'text-[#0e5c3c]'}`}>{t('teacher.topic_covered')}</p><p className={`text-lg font-bold ${isDark ? 'text-white' : 'text-brand-deepPlum'}`}>{selectedRecord.topic_covered}</p></div>
                     <div className="grid grid-cols-2 gap-4">
-                      <div className="bg-gray-50 p-3 rounded-xl"><p className="text-xs text-gray-500 font-medium">{t('teacher.date_label')}</p><p className="font-bold text-brand-deepPlum">{selectedRecord.date}</p></div>
-                      <div className="bg-gray-50 p-3 rounded-xl"><p className="text-xs text-gray-500 font-medium">{t('common.time')}</p><p className="font-bold text-brand-deepPlum">{selectedRecord.start_time.substring(0,5)} - {selectedRecord.end_time.substring(0,5)}</p></div>
-                      <div className="bg-gray-50 p-3 rounded-xl"><p className="text-xs text-gray-500 font-medium">{t('teacher.class_label')} & {t('teacher.section_label')}</p><p className="font-bold text-brand-deepPlum">{selectedRecord.class_level_name} - {selectedRecord.section_name}</p></div>
-                      <div className="bg-gray-50 p-3 rounded-xl"><p className="text-xs text-gray-500 font-medium">{t('teacher.subject_label')}</p><p className="font-bold text-brand-deepPlum">{selectedRecord.subject_name}</p></div>
+                      <div className={`p-3 rounded-xl ${isDark ? 'bg-white/[0.03]' : 'bg-gray-50'}`}><p className={`text-xs font-medium ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{t('teacher.date_label')}</p><p className={`font-bold ${isDark ? 'text-white' : 'text-brand-deepPlum'}`}>{selectedRecord.date}</p></div>
+                      <div className={`p-3 rounded-xl ${isDark ? 'bg-white/[0.03]' : 'bg-gray-50'}`}><p className={`text-xs font-medium ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{t('common.time')}</p><p className={`font-bold ${isDark ? 'text-white' : 'text-brand-deepPlum'}`}>{selectedRecord.start_time.substring(0,5)} - {selectedRecord.end_time.substring(0,5)}</p></div>
+                      <div className={`p-3 rounded-xl ${isDark ? 'bg-white/[0.03]' : 'bg-gray-50'}`}><p className={`text-xs font-medium ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{t('teacher.class_label')} & {t('teacher.section_label')}</p><p className={`font-bold ${isDark ? 'text-white' : 'text-brand-deepPlum'}`}>{selectedRecord.class_level_name} - {selectedRecord.section_name}</p></div>
+                      <div className={`p-3 rounded-xl ${isDark ? 'bg-white/[0.03]' : 'bg-gray-50'}`}><p className={`text-xs font-medium ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{t('teacher.subject_label')}</p><p className={`font-bold ${isDark ? 'text-white' : 'text-brand-deepPlum'}`}>{selectedRecord.subject_name}</p></div>
                     </div>
                     <button onClick={() => setIsEditing(true)} className="w-full mt-4 py-3 rounded-xl bg-brand-royalPurple hover:bg-brand-deepPlum text-white font-bold transition-colors">{t('teacher.edit')}</button>
                   </div>
@@ -157,7 +160,7 @@ export default function TeacherDashboard() {
                     </div>
                     <div><label className={labelClass}>{t('teacher.topic_covered')}</label><textarea name="topic_covered" required value={editFormData.topic_covered} onChange={handleEditChange} rows="2" className={inputClass}></textarea></div>
                     <div className="flex gap-3 pt-2">
-                      <button type="button" onClick={() => setIsEditing(false)} className="flex-1 py-3 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold transition-colors">{t('common.cancel')}</button>
+                      <button type="button" onClick={() => setIsEditing(false)} className={`flex-1 py-3 rounded-xl font-bold transition-colors ${isDark ? 'bg-white/[0.05] hover:bg-white/[0.08] text-slate-300' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'}`}>{t('common.cancel')}</button>
                       <button type="submit" disabled={isUpdating} className={`flex-1 py-3 rounded-xl text-white font-bold transition-colors ${isUpdating ? 'bg-gray-400' : 'bg-brand-tealCyan text-brand-deepPlum'}`}>{isUpdating ? t('teacher.saving') : t('teacher.save_changes')}</button>
                     </div>
                   </form>
