@@ -54,77 +54,77 @@ export default function StudentDashboard() {
   if (isLoading) return <div className={`p-10 text-center font-bold ${isDark ? 'text-slate-300' : 'text-brand-deepPlum'}`}>{t('common.loading')}</div>;
 
   return (
-    <div className="space-y-6 pb-10">
-      <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="bg-brand-deepPlum rounded-3xl p-8 text-white relative overflow-hidden shadow-lg border border-brand-royalPurple flex flex-col md:flex-row justify-between items-center gap-6">
+    <div className="space-y-3 sm:space-y-6 pb-2 overflow-x-hidden">
+      <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="bg-brand-deepPlum rounded-2xl sm:rounded-3xl p-5 sm:p-8 text-white relative overflow-hidden shadow-lg border border-brand-royalPurple flex flex-col md:flex-row justify-between items-center gap-4 sm:gap-6">
         <div className="relative z-10 w-full md:w-2/3">
-          <span className="inline-block px-3 py-1 bg-brand-tealCyan/20 text-brand-tealCyan font-bold text-xs rounded-full mb-3 tracking-wider uppercase border border-brand-tealCyan/30">
+          <span className="inline-block px-2 sm:px-3 py-1 bg-brand-tealCyan/20 text-brand-tealCyan font-bold text-[10px] sm:text-xs rounded-full mb-2 sm:mb-3 tracking-wider uppercase border border-brand-tealCyan/30">
             {t('student.portal')}
           </span>
-          <h1 className="text-3xl md:text-4xl font-bold mb-2">{t('student.hello')}, {studentInfo?.name || 'Student'}! 🎓</h1>
-          <p className="text-gray-300 text-sm leading-relaxed max-w-lg">
+          <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold mb-2">{t('student.hello')}, {studentInfo?.name || 'Student'}! 🎓</h1>
+          <p className="text-gray-300 text-xs sm:text-sm leading-relaxed max-w-lg">
             {t('common.class')}: {studentProfile?.class_level_name || 'N/A'} | {t('common.section')}: {studentProfile?.section_name || 'N/A'} | {t('common.roll')}: {studentProfile?.roll_number || 'N/A'}
           </p>
         </div>
-        <div className="relative z-10 bg-white/10 backdrop-blur-md border border-white/20 p-5 rounded-2xl flex items-center gap-4 shrink-0">
-          <div className="text-4xl animate-pulse">⏰</div>
+        <div className="relative z-10 bg-white/10 backdrop-blur-md border border-white/20 p-3 sm:p-5 rounded-2xl flex items-center gap-3 sm:gap-4 shrink-0 w-full sm:w-auto justify-center sm:justify-start">
+          <div className="text-2xl sm:text-4xl animate-pulse">⏰</div>
           <div>
-            <p className="text-2xl font-bold text-brand-tealCyan tracking-wider">{timeString}</p>
-            <p className="text-xs font-bold text-gray-300 uppercase tracking-widest">{dateString}</p>
+            <p className="text-lg sm:text-2xl font-bold text-brand-tealCyan tracking-wider">{timeString}</p>
+            <p className="text-[10px] sm:text-xs font-bold text-gray-300 uppercase tracking-widest">{dateString}</p>
           </div>
         </div>
-        <div className="absolute right-0 bottom-0 opacity-5 pointer-events-none transform translate-x-1/4 translate-y-1/4"><span className="text-[250px]">📚</span></div>
+        <div className="absolute right-0 bottom-0 opacity-5 pointer-events-none transform translate-x-1/4 translate-y-1/4"><span className="text-[150px] sm:text-[250px]">📚</span></div>
       </motion.div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className={`p-6 rounded-2xl shadow-sm flex items-center gap-4 ${isDark ? 'bg-white/[0.03] border border-white/[0.06]' : 'bg-white border border-gray-100'}`}>
-          <div className="w-14 h-14 bg-brand-mintGreen/20 text-[#0e5c3c] rounded-2xl flex items-center justify-center text-2xl">✅</div>
-          <div>
-            <p className={`text-xs font-bold uppercase tracking-wider mb-0.5 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{t('student.attendance')}</p>
-            <p className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-brand-deepPlum'}`}>{attendanceStats ? `${attendanceStats.percentage}%` : 'N/A'}</p>
-            {attendanceStats && <p className={`text-xs ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>{attendanceStats.present}/{attendanceStats.total} {t('student.days')}</p>}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-6">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className={`p-4 sm:p-6 rounded-2xl shadow-sm flex items-center gap-3 sm:gap-4 ${isDark ? 'bg-white/[0.03] border border-white/[0.06]' : 'bg-white border border-gray-100'}`}>
+          <div className="w-10 h-10 sm:w-14 sm:h-14 bg-brand-mintGreen/20 text-[#0e5c3c] rounded-2xl flex items-center justify-center text-lg sm:text-2xl shrink-0">✅</div>
+          <div className="min-w-0">
+            <p className={`text-[10px] sm:text-xs font-bold uppercase tracking-wider mb-0.5 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{t('student.attendance')}</p>
+            <p className={`text-xl sm:text-2xl font-bold ${isDark ? 'text-white' : 'text-brand-deepPlum'}`}>{attendanceStats ? `${attendanceStats.percentage}%` : 'N/A'}</p>
+            {attendanceStats && <p className={`text-[10px] sm:text-xs ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>{attendanceStats.present}/{attendanceStats.total} {t('student.days')}</p>}
           </div>
         </motion.div>
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className={`p-6 rounded-2xl shadow-sm flex items-center gap-4 ${isDark ? 'bg-white/[0.03] border border-white/[0.06]' : 'bg-white border border-gray-100'}`}>
-          <div className="w-14 h-14 bg-orange-50 text-orange-600 rounded-2xl flex items-center justify-center text-2xl">📝</div>
-          <div>
-            <p className={`text-xs font-bold uppercase tracking-wider mb-0.5 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{t('student.upcoming_exams')}</p>
-            <p className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-brand-deepPlum'}`}>{upcomingExams}</p>
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className={`p-4 sm:p-6 rounded-2xl shadow-sm flex items-center gap-3 sm:gap-4 ${isDark ? 'bg-white/[0.03] border border-white/[0.06]' : 'bg-white border border-gray-100'}`}>
+          <div className="w-10 h-10 sm:w-14 sm:h-14 bg-orange-50 text-orange-600 rounded-2xl flex items-center justify-center text-lg sm:text-2xl shrink-0">📝</div>
+          <div className="min-w-0">
+            <p className={`text-[10px] sm:text-xs font-bold uppercase tracking-wider mb-0.5 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{t('student.upcoming_exams')}</p>
+            <p className={`text-xl sm:text-2xl font-bold ${isDark ? 'text-white' : 'text-brand-deepPlum'}`}>{upcomingExams}</p>
           </div>
         </motion.div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.4 }} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden lg:col-span-2">
-          <div className="p-6 border-b border-gray-100 bg-[#F5F0FF] flex justify-between items-center">
-            <h2 className="text-lg font-bold text-brand-deepPlum">📅 {t('student.weekly_routine')}</h2>
-            <span className="text-sm text-brand-royalPurple font-bold">{weeklyRoutine?.class_level || studentProfile?.class_level_name} - {weeklyRoutine?.section || studentProfile?.section_name}</span>
+          <div className="p-4 sm:p-6 border-b border-gray-100 bg-[#F5F0FF] flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+            <h2 className="text-base sm:text-lg font-bold text-brand-deepPlum">📅 {t('student.weekly_routine')}</h2>
+            <span className="text-xs sm:text-sm text-brand-royalPurple font-bold">{weeklyRoutine?.class_level || studentProfile?.class_level_name} - {weeklyRoutine?.section || studentProfile?.section_name}</span>
           </div>
-          <div className="p-6">
+          <div className="p-3 sm:p-6">
             {!weeklyRoutine || Object.values(weeklyRoutine.weekly_routine || {}).every(arr => arr.length === 0) ? (
-              <div className="text-center py-10 text-gray-400"><span className="text-4xl block mb-3">📅</span><p className="font-semibold">{t('student.no_routine')}</p></div>
+              <div className="text-center py-8 text-gray-400"><span className="text-3xl sm:text-4xl block mb-3">📅</span><p className="font-semibold text-sm">{t('student.no_routine')}</p></div>
             ) : (
-              <div className="space-y-6">
+              <div className="space-y-4 sm:space-y-6">
                 {DAYS.map(day => {
                   const periods = weeklyRoutine.weekly_routine[day] || [];
                   const isToday = day === todayDay;
                   return (
                     <div key={day} className={`rounded-xl border ${isToday ? 'border-brand-tealCyan bg-brand-tealCyan/5 ring-1 ring-brand-tealCyan/20' : 'border-gray-100 bg-gray-50'}`}>
-                      <div className={`px-4 py-2 rounded-t-xl flex items-center gap-2 ${isToday ? 'bg-brand-tealCyan text-white' : 'bg-gray-100 text-gray-700'}`}>
-                        <span className="font-bold text-sm">{day}</span>
-                        <span className="text-xs opacity-75">{DAY_BENGALI[day]}</span>
-                        {isToday && <span className="ml-auto text-[10px] font-bold bg-white/20 px-2 py-0.5 rounded-full">{t('student.today')}</span>}
+                      <div className={`px-3 sm:px-4 py-2 rounded-t-xl flex items-center gap-2 ${isToday ? 'bg-brand-tealCyan text-white' : 'bg-gray-100 text-gray-700'}`}>
+                        <span className="font-bold text-xs sm:text-sm">{day}</span>
+                        <span className="text-[10px] sm:text-xs opacity-75">{DAY_BENGALI[day]}</span>
+                        {isToday && <span className="ml-auto text-[9px] sm:text-[10px] font-bold bg-white/20 px-2 py-0.5 rounded-full">{t('student.today')}</span>}
                       </div>
-                      <div className="p-3">
+                      <div className="p-2 sm:p-3">
                         {periods.length === 0 ? (
-                          <p className="text-xs text-gray-400 py-2 text-center">{t('student.no_classes')}</p>
+                          <p className="text-[11px] sm:text-xs text-gray-400 py-2 text-center">{t('student.no_classes')}</p>
                         ) : (
-                          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-1.5 sm:gap-2">
                             {periods.map((period, idx) => (
-                              <div key={idx} className="flex items-center gap-3 p-2.5 bg-white rounded-lg border border-gray-100 hover:shadow-sm transition-shadow">
-                                <div className="bg-brand-tealCyan/20 text-brand-deepPlum font-bold p-1.5 rounded-lg text-[10px] w-8 h-8 flex items-center justify-center shrink-0">P{period.period}</div>
+                              <div key={idx} className="flex items-center gap-2 sm:gap-3 p-2 sm:p-2.5 bg-white rounded-lg border border-gray-100 hover:shadow-sm transition-shadow">
+                                <div className="bg-brand-tealCyan/20 text-brand-deepPlum font-bold p-1 sm:p-1.5 rounded-lg text-[9px] sm:text-[10px] w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center shrink-0">P{period.period}</div>
                                 <div className="min-w-0">
-                                  <p className="font-semibold text-gray-800 text-xs truncate">{period.subject_name}</p>
-                                  <p className="text-[10px] text-gray-500">{period.start_time} - {period.end_time}{period.teacher_name ? ` | ${period.teacher_name}` : ' | TBA'}{period.room_number ? ` | Rm ${period.room_number}` : ''}</p>
+                                  <p className="font-semibold text-gray-800 text-[11px] sm:text-xs truncate">{period.subject_name}</p>
+                                  <p className="text-[9px] sm:text-[10px] text-gray-500 truncate">{period.start_time} - {period.end_time}{period.teacher_name ? ` | ${period.teacher_name}` : ''}</p>
                                 </div>
                               </div>
                             ))}
@@ -140,29 +140,29 @@ export default function StudentDashboard() {
         </motion.div>
 
         <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.5 }} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden lg:col-span-2">
-          <div className="p-6 border-b border-gray-100 flex justify-between items-center">
-            <h2 className="text-lg font-bold text-brand-deepPlum">{t('student.recent_notices')}</h2>
-            <span className="text-xl">📢</span>
+          <div className="p-4 sm:p-6 border-b border-gray-100 flex justify-between items-center">
+            <h2 className="text-base sm:text-lg font-bold text-brand-deepPlum">{t('student.recent_notices')}</h2>
+            <span className="text-lg sm:text-xl">📢</span>
           </div>
-          <div className="p-6 space-y-4">
+          <div className="p-4 sm:p-6 space-y-3 sm:space-y-4">
             {notices.length === 0 ? (
-              <div className="text-center py-8 text-gray-400"><span className="text-4xl block mb-3">📢</span><p className="font-semibold">{t('student.no_notices')}</p></div>
+              <div className="text-center py-6 sm:py-8 text-gray-400"><span className="text-3xl sm:text-4xl block mb-3">📢</span><p className="font-semibold text-sm">{t('student.no_notices')}</p></div>
             ) : (
               notices.map((notice) => (
-                <div key={notice.id} className="p-4 border border-gray-100 rounded-xl hover:bg-brand-softLavender/5 transition-colors cursor-pointer group">
-                  <div className="flex justify-between items-start mb-2">
-                    <span className={`text-[10px] uppercase font-bold tracking-wider px-2 py-1 rounded-md ${
+                <div key={notice.id} className="p-3 sm:p-4 border border-gray-100 rounded-xl hover:bg-brand-softLavender/5 transition-colors cursor-pointer group">
+                  <div className="flex justify-between items-start mb-2 gap-2">
+                    <span className={`text-[9px] sm:text-[10px] uppercase font-bold tracking-wider px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md shrink-0 ${
                       notice.category === 'Academic' ? 'bg-blue-50 text-blue-600' : notice.category === 'Exam' ? 'bg-orange-50 text-orange-600' : notice.category === 'Event' ? 'bg-purple-50 text-purple-600' : notice.category === 'Holiday' ? 'bg-red-50 text-red-600' : 'bg-brand-mintGreen/20 text-[#0e5c3c]'}`}>
                       {notice.category}
                     </span>
-                    <span className="text-xs text-gray-400 font-semibold">{new Date(notice.date).toLocaleDateString('en-GB')}</span>
+                    <span className="text-[10px] sm:text-xs text-gray-400 font-semibold shrink-0">{new Date(notice.date).toLocaleDateString('en-GB')}</span>
                   </div>
-                  <h3 className="font-bold text-gray-800 group-hover:text-brand-royalPurple transition-colors">{notice.title_en}</h3>
-                  {notice.description_en && <p className="text-xs text-gray-500 mt-1 line-clamp-2">{notice.description_en}</p>}
+                  <h3 className="font-bold text-gray-800 text-sm sm:text-base group-hover:text-brand-royalPurple transition-colors">{notice.title_en}</h3>
+                  {notice.description_en && <p className="text-[11px] sm:text-xs text-gray-500 mt-1 line-clamp-2">{notice.description_en}</p>}
                 </div>
               ))
             )}
-            {notices.length > 0 && <button className="w-full py-3 mt-2 rounded-xl border-2 border-brand-royalPurple/20 text-brand-royalPurple font-bold hover:bg-brand-royalPurple/5 transition-colors">{t('student.view_all_notices')}</button>}
+            {notices.length > 0 && <button className="w-full py-2.5 sm:py-3 mt-2 rounded-xl border-2 border-brand-royalPurple/20 text-brand-royalPurple font-bold hover:bg-brand-royalPurple/5 transition-colors text-sm">{t('student.view_all_notices')}</button>}
           </div>
         </motion.div>
       </div>
